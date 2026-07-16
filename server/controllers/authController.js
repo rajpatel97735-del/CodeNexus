@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import otpGenerator from "otp-generator";
-import Otp from "../models/Otp.js";
+import Otp from "../models/otp.js";
 import { sendEmail } from "../services/email.service.js";
 export const registerUser = async (req, res) => {
   try {
