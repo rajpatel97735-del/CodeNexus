@@ -1,8 +1,13 @@
+
 import dotenv from "dotenv";
-dotenv.config();
+
+const result = dotenv.config();
+
+console.log(result);
 
 import app from "./app.js";
 import connectDB from "./config/database.js";
+console.log("Current Directory:", process.cwd());
 
 const PORT = process.env.PORT || 5000;
 

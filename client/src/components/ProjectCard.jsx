@@ -1,6 +1,8 @@
 import { deleteProject } from "../services/project.service";
-
+import { useNavigate } from "react-router-dom";
+import { downloadProject } from "../utils/downloadProject";
 function ProjectCard({ project, refresh, onEdit }) {
+  const navigate = useNavigate();
   const handleDelete = async () => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this project?"
@@ -56,34 +58,63 @@ function ProjectCard({ project, refresh, onEdit }) {
   </span>
 </p>
 
-      <button
-        onClick={() => onEdit(project)}
-        style={{
-          background: "#2563eb",
-          color: "white",
-          border: "none",
-          padding: "8px 15px",
-          marginRight: "10px",
-          borderRadius: "5px",
-          cursor: "pointer",
-        }}
-      >
-        ✏ Edit
-      </button>
+    <button
+  onClick={() => navigate(`/editor/${project._id}`)}
+  style={{
+    background: "#10b981",
+    color: "white",
+    border: "none",
+    padding: "8px 15px",
+    marginRight: "10px",
+    borderRadius: "5px",
+    cursor: "pointer",
+  }}
+>
+  💻 Open Editor
+</button>
 
-      <button
-        onClick={handleDelete}
-        style={{
-          background: "#ef4444",
-          color: "white",
-          border: "none",
-          padding: "8px 15px",
-          borderRadius: "5px",
-          cursor: "pointer",
-        }}
-      >
-        🗑 Delete
-      </button>
+<button
+  onClick={() => onEdit(project)}
+  style={{
+    background: "#2563eb",
+    color: "white",
+    border: "none",
+    padding: "8px 15px",
+    marginRight: "10px",
+    borderRadius: "5px",
+    cursor: "pointer",
+  }}
+>
+  ✏ Edit
+</button>
+
+<button
+  onClick={handleDelete}
+  style={{
+    background: "#ef4444",
+    color: "white",
+    border: "none",
+    padding: "8px 15px",
+    borderRadius: "5px",
+    cursor: "pointer",
+  }}
+>
+  🗑 Delete
+</button>
+<button
+  onClick={() => downloadProject(project)}
+  style={{
+    background: "#7c3aed",
+    color: "white",
+    border: "none",
+    padding: "8px 15px",
+    marginLeft: "10px",
+    borderRadius: "5px",
+    cursor: "pointer",
+  }}
+>
+  📦 Download ZIP
+</button>
     </div>
   );
 }

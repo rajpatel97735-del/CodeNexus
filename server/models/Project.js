@@ -5,6 +5,7 @@ const projectSchema = new mongoose.Schema(
     title: {
       type: String,
       required: true,
+      trim: true,
     },
 
     description: {
@@ -12,10 +13,25 @@ const projectSchema = new mongoose.Schema(
       default: "",
     },
 
-    status: {
+    language: {
       type: String,
-      enum: ["Pending", "In Progress", "Completed"],
-      default: "Pending",
+      enum: ["HTML", "JavaScript", "React"],
+      default: "HTML",
+    },
+
+    html: {
+      type: String,
+      default: "",
+    },
+
+    css: {
+      type: String,
+      default: "",
+    },
+
+    javascript: {
+      type: String,
+      default: "",
     },
 
     user: {

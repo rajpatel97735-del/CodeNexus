@@ -1,7 +1,10 @@
 import { Link, useNavigate } from "react-router-dom";
+import { useTheme } from "../context/ThemeContext";
 
 function Navbar() {
   const navigate = useNavigate();
+
+  const { dark, toggleTheme } = useTheme();
 
   const user = JSON.parse(localStorage.getItem("user"));
 
@@ -13,13 +16,17 @@ function Navbar() {
   return (
     <nav
       style={{
-        background: "linear-gradient(90deg,#2563eb,#1d4ed8)",
-        color: "white",
+        background: dark
+          ? "#111827"
+          : "#f8fafc",
+        color: dark ? "white" : "black",
         padding: "15px 40px",
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        boxShadow: "0 3px 10px rgba(0,0,0,0.2)",
+        borderBottom: dark
+          ? "1px solid #374151"
+          : "1px solid #ddd",
       }}
     >
       <h2
@@ -42,10 +49,9 @@ function Navbar() {
         <Link
           to="/dashboard"
           style={{
-            color: "white",
+            color: dark ? "white" : "black",
             textDecoration: "none",
             fontWeight: "bold",
-            fontSize: "17px",
           }}
         >
           🏠 Dashboard
@@ -54,7 +60,9 @@ function Navbar() {
         <span
           style={{
             fontWeight: "bold",
-            background: "rgba(255,255,255,0.2)",
+            background: dark
+              ? "#374151"
+              : "#e5e7eb",
             padding: "8px 15px",
             borderRadius: "20px",
           }}
@@ -62,12 +70,29 @@ function Navbar() {
           👤 {user?.name}
         </span>
 
+        {/* Theme Button */}
+        <button
+          onClick={toggleTheme}
+          style={{
+            background: "#2563eb",
+            color: "white",
+            border: "none",
+            padding: "10px 18px",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontWeight: "bold",
+          }}
+        >
+          {dark ? "☀ Light" : "🌙 Dark"}
+        </button>
+
+        {/* Logout */}
         <button
           onClick={logout}
           style={{
             background: "#ef4444",
-            border: "none",
             color: "white",
+            border: "none",
             padding: "10px 18px",
             borderRadius: "8px",
             cursor: "pointer",

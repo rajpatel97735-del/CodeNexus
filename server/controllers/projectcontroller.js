@@ -5,14 +5,23 @@ import Project from "../models/Project.js";
 // =======================
 export const createProject = async (req, res) => {
   try {
-    const { title, description, status } = req.body;
-
-    const project = await Project.create({
-      title,
-      description,
-      status,
-      user: req.user.id,
-    });
+    const {
+  title,
+  description,
+  language,
+  html,
+  css,
+  javascript,
+} = req.body;
+const project = await Project.create({
+  title,
+  description,
+  language,
+  html,
+  css,
+  javascript,
+  user: req.user.id,
+});
 
     res.status(201).json({
       success: true,
