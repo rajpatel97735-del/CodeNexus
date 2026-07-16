@@ -6,7 +6,7 @@ import {
   getProject,
   updateProject,
   deleteProject,
-} from "../controllers/temp.js";
+} from "../controllers/projectController.js";
 
 import protect from "../middleware/authMiddleware.js";
 
