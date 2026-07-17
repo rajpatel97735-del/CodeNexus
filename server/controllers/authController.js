@@ -46,7 +46,7 @@ const user = await User.create({
   name,
   email,
   password: hashedPassword,
-  isVerified: false,
+  isVerified: true, // Temporary for testing
 });
 // await sendEmail(
 //   email,
@@ -151,25 +151,13 @@ export const verifyOTP = async (req, res) => {
     }
 
     if (new Date() > otpRecord.expiresAt) {
-      const user = await User.findOne({ email });
+  await Otp.deleteMany({ email });
 
-if (!user) {
-  return res.status(404).json({
+  return res.status(400).json({
     success: false,
-    message: "User not found",
+    message: "OTP expired",
   });
 }
-
-user.isVerified = true;
-await user.save();
-
-// Delete all OTPs for this email
-await Otp.deleteMany({ email });
-      return res.status(400).json({
-        success: false,
-        message: "OTP expired",
-      });
-    }
 
     if (otpRecord.otp !== otp) {
       return res.status(400).json({
