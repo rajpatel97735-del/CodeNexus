@@ -48,15 +48,15 @@ const user = await User.create({
   password: hashedPassword,
   isVerified: false,
 });
-await sendEmail(
-  email,
-  "CodeNexus Email Verification",
-  `Your OTP is ${otp}
-
-This OTP will expire in 5 minutes.
-
-Do not share this OTP with anyone.`
-);
+// await sendEmail(
+//   email,
+//   "CodeNexus Email Verification",
+//   `Your OTP is ${otp}
+//
+// This OTP will expire in 5 minutes.
+//
+// Do not share this OTP with anyone.`
+// );
 
 res.status(201).json({
   success: true,
