@@ -3,7 +3,9 @@ import { generateCode } from "../controllers/aiController.js";
 
 const router = express.Router();
 
-// Generate AI Code
-router.post("/generate", generateCode);
+router.post("/generate", (req, res, next) => {
+  console.log("✅ AI Route Hit");
+  next();
+}, generateCode);
 
 export default router;

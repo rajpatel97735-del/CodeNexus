@@ -1,36 +1,14 @@
-import { GoogleGenAI } from "@google/genai";
-
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-});
+import { generateWebsite } from "../services/groq.service.js";
 
 export const generateCode = async (req, res) => {
   try {
     const { prompt } = req.body;
-const response = await ai.models.generateContent({
-  model: "gemini-3.5-flash",
-      contents: `
-Return ONLY valid JSON.
 
-Format:
-{
-  "html":"",
-  "css":"",
-  "javascript":""
-}
+    const result = await generateWebsite(prompt);
 
-User Prompt:
-${prompt}
-`,
-    });
-
-    res.json({
-      success: true,
-      result: response.text,
-    });
-
+    res.json(JSON.parse(result));
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error(error);
 
     res.status(500).json({
       success: false,
