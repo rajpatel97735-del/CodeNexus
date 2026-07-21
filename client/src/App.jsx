@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import DashboardV2 from "./pages/DashboardV2";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
+
 import NotFound from "./pages/NotFound";
 import Editor from "./pages/Editor";
 import ProtectedRoute from "./components/ProtectedRoute";
