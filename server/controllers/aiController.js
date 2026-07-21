@@ -1,16 +1,26 @@
-import { generateWebsite } from "../services/groq.service.js";
-
-export const generateCode = async (req, res) => {
+import { generateWebsiteFromAI } from "../services/groq.service.js";
+export const generateWebsite = async (req, res) => {
   try {
     const { prompt } = req.body;
 
-    const result = await generateWebsite(prompt);
+    const result = await generateWebsiteFromAI(prompt);
 
-    res.json(JSON.parse(result));
+    console.log("Controller Result:");
+    console.log(result);
+
+    return res.status(200).json({
+      success: true,
+      html: result.html,
+      css: result.css,
+      javascript: result.javascript,
+    });
+
   } catch (error) {
+    console.error("========== CONTROLLER ERROR ==========");
     console.error(error);
+    console.error(error.stack);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });

@@ -1,45 +1,111 @@
-import axios from "axios";
+import { GoogleGenAI } from "@google/genai";
 
-export async function generateWebsite(prompt) {
-  const response = await axios.post(
-    "https://openrouter.ai/api/v1/chat/completions",
-    {
-      model: "deepseek/deepseek-chat-v3-0324:free",
-      messages: [
-        {
-          role: "system",
-          content: `You are an expert web developer.
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
 
-Return ONLY valid JSON in this format:
+export const generateWebsiteFromAI = async (prompt) => {
+  const fullPrompt = `
+You are an expert frontend developer.
+
+Generate a complete responsive website.
+
+Return ONLY valid JSON.
+
+Format:
 
 {
-  "html": "",
-  "css": "",
-  "javascript": ""
+  "html":"",
+  "css":"",
+  "javascript":""
 }
 
-Do not add markdown.
-Do not use \`\`\`.
-Do not explain anything.`,
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-    }
-  );
+Rules:
+- No markdown
+- No explanation
+- No code block
+- No \`\`\`
+- HTML only in html
+- CSS only in css
+- JavaScript only in javascript
 
-  let text = response.data.choices[0].message.content.trim();
+User Request:
+${prompt}
+`;
 
-  // Remove markdown if the model returns it
-  text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: fullPrompt,
+  });
 
-  return text;
+  let text = response.text;
+
+  // Remove markdown code blocks if present
+  text = text
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    console.error("Invalid Gemini Response:");
+    console.log(text);
+
+    throw new Error("Gemini returned invalid JSON.");
+  }
+};
+export const editWebsiteWithAI = async ({
+  prompt,
+  html,
+  css,
+  javascript,
+}) => {
+  const fullPrompt = `
+You are an expert frontend developer.
+
+Modify the existing website according to the user's request.
+
+Return ONLY valid JSON.
+
+Format:
+
+{
+  "html":"",
+  "css":"",
+  "javascript":""
 }
+
+Rules:
+- Preserve existing code unless modification is required.
+- No markdown.
+- No explanation.
+- No \`\`\`.
+
+Current HTML:
+${html}
+
+Current CSS:
+${css}
+
+Current JavaScript:
+${javascript}
+
+User Request:
+${prompt}
+`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: fullPrompt,
+  });
+
+  let text = response.text;
+
+  text = text
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+
+  return JSON.parse(text);
+};
