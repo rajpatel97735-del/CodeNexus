@@ -1,9 +1,19 @@
-import { Save, Download, Play } from "lucide-react";
+import {
+  Save,
+  Download,
+  Play,
+  Undo2,
+  Redo2,
+  Wrench,
+} from "lucide-react";
 
 export default function TopBar({
   onSave,
   onExport,
   onRun,
+  onUndo,
+  onRedo,
+  onFix,
   saveStatus,
 }) {
   return (
@@ -19,7 +29,6 @@ export default function TopBar({
       }}
     >
       {/* Left */}
-
       <div
         style={{
           display: "flex",
@@ -47,7 +56,6 @@ export default function TopBar({
       </div>
 
       {/* Right */}
-
       <div
         style={{
           display: "flex",
@@ -55,18 +63,32 @@ export default function TopBar({
         }}
       >
         <button
+          onClick={onUndo}
+          style={buttonStyle("#ea580c")}
+        >
+          <Undo2 size={17} />
+          Undo
+        </button>
+
+        <button
+          onClick={onRedo}
+          style={buttonStyle("#0891b2")}
+        >
+          <Redo2 size={17} />
+          Redo
+        </button>
+
+        <button
+          onClick={onFix}
+          style={buttonStyle("#dc2626")}
+        >
+          <Wrench size={17} />
+          Fix AI
+        </button>
+
+        <button
           onClick={onRun}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "8px 14px",
-            border: "none",
-            borderRadius: 6,
-            background: "#16a34a",
-            color: "white",
-            cursor: "pointer",
-          }}
+          style={buttonStyle("#16a34a")}
         >
           <Play size={17} />
           Run
@@ -74,17 +96,7 @@ export default function TopBar({
 
         <button
           onClick={onSave}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "8px 14px",
-            border: "none",
-            borderRadius: 6,
-            background: "#2563eb",
-            color: "white",
-            cursor: "pointer",
-          }}
+          style={buttonStyle("#2563eb")}
         >
           <Save size={17} />
           Save
@@ -92,17 +104,7 @@ export default function TopBar({
 
         <button
           onClick={onExport}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "8px 14px",
-            border: "none",
-            borderRadius: 6,
-            background: "#9333ea",
-            color: "white",
-            cursor: "pointer",
-          }}
+          style={buttonStyle("#9333ea")}
         >
           <Download size={17} />
           Export
@@ -111,3 +113,15 @@ export default function TopBar({
     </div>
   );
 }
+
+const buttonStyle = (bg) => ({
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  padding: "8px 14px",
+  border: "none",
+  borderRadius: 6,
+  background: bg,
+  color: "white",
+  cursor: "pointer",
+});

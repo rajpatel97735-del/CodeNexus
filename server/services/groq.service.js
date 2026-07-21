@@ -105,3 +105,195 @@ Do not write anything except these three sections.
     javascript,
   };
 }
+export async function editWebsiteFromAI({
+  prompt,
+  html,
+  css,
+  javascript,
+})
+ {
+  const completion = await groq.chat.completions.create({
+    model: "llama-3.3-70b-versatile",
+    temperature: 0.3,
+    messages: [
+      {
+        role: "system",
+        content: `
+You are an expert frontend developer.
+
+The user already has a website.
+
+Modify ONLY according to the user's request.
+
+Return EXACTLY in this format.
+
+###HTML###
+(updated html)
+
+###CSS###
+(updated css)
+
+###JAVASCRIPT###
+(updated javascript)
+
+Rules:
+
+- Return COMPLETE updated code.
+- Do not return only changed lines.
+- No markdown
+- No JSON
+- No explanation
+- No \`\`\`
+- HTML must NOT contain:
+<!DOCTYPE html>
+<html>
+<head>
+<body>
+</body>
+</html>
+`,
+      },
+      {
+        role: "user",
+        content: `
+Current HTML:
+
+${html}
+
+Current CSS:
+
+${css}
+
+Current JavaScript:
+
+${javascript}
+
+User Request:
+
+${prompt}
+`,
+      },
+    ],
+  });
+
+  let text = completion.choices[0].message.content.trim();
+
+  text = text
+    .replace(/```html/gi, "")
+    .replace(/```css/gi, "")
+    .replace(/```javascript/gi, "")
+    .replace(/```js/gi, "")
+    .replace(/```/g, "");
+
+  const updatedHtml = extractSection(text, "HTML");
+  const updatedCss = extractSection(text, "CSS");
+  const updatedJavascript = extractSection(text, "JAVASCRIPT");
+
+  if (!updatedHtml && !updatedCss && !updatedJavascript) {
+    throw new Error("AI response format is invalid.");
+  }
+
+  return {
+    html: updatedHtml,
+    css: updatedCss,
+    javascript: updatedJavascript,
+  };
+}
+export async function fixWebsiteFromAI({
+  html,
+  css,
+  javascript,
+}) {
+  const completion = await groq.chat.completions.create({
+    model: "llama-3.3-70b-versatile",
+    temperature: 0.2,
+    messages: [
+      {
+        role: "system",
+        content: `
+You are an expert frontend developer.
+
+Your job is to FIX errors in the given website.
+
+Fix:
+
+- HTML syntax
+- CSS syntax
+- JavaScript syntax
+- Missing tags
+- Broken layouts
+- Invalid code
+
+Do NOT redesign the website.
+
+Keep the same UI.
+
+Return ONLY this format.
+
+###HTML###
+(updated html)
+
+###CSS###
+(updated css)
+
+###JAVASCRIPT###
+(updated javascript)
+
+Rules:
+
+- Return COMPLETE code.
+- No markdown.
+- No JSON.
+- No explanation.
+- No \`\`\`
+- Do NOT include:
+<!DOCTYPE html>
+<html>
+<head>
+<body>
+</body>
+</html>
+`,
+      },
+      {
+        role: "user",
+        content: `
+Current HTML:
+
+${html}
+
+Current CSS:
+
+${css}
+
+Current JavaScript:
+
+${javascript}
+`,
+      },
+    ],
+  });
+
+  let text = completion.choices[0].message.content.trim();
+
+  text = text
+    .replace(/```html/gi, "")
+    .replace(/```css/gi, "")
+    .replace(/```javascript/gi, "")
+    .replace(/```js/gi, "")
+    .replace(/```/g, "");
+
+  const fixedHtml = extractSection(text, "HTML");
+  const fixedCss = extractSection(text, "CSS");
+  const fixedJavascript = extractSection(text, "JAVASCRIPT");
+
+  if (!fixedHtml && !fixedCss && !fixedJavascript) {
+    throw new Error("AI response format is invalid.");
+  }
+
+  return {
+    html: fixedHtml,
+    css: fixedCss,
+    javascript: fixedJavascript,
+  };
+}

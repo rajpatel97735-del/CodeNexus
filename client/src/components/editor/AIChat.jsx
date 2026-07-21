@@ -1,83 +1,127 @@
 import { useState } from "react";
-import { Send } from "lucide-react";
+import { Send, Sparkles, Pencil } from "lucide-react";
 
-export default function AIChat({ onGenerate }) {
+export default function AIChat({
+  onGenerate,
+  onEdit,
+}) {
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState("generate");
 
   const handleSend = async () => {
     if (!prompt.trim()) return;
 
     setLoading(true);
 
-    await onGenerate(prompt);
+    try {
+      if (mode === "generate") {
+        await onGenerate(prompt);
+      } else {
+        await onEdit(prompt);
+      }
+
+      setPrompt("");
+    } catch (err) {
+      console.error(err);
+    }
 
     setLoading(false);
-
-    setPrompt("");
   };
 
   return (
     <div
       style={{
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
         background: "#111827",
-        color: "white",
+        borderBottom: "1px solid #334155",
+        padding: 15,
       }}
     >
-      <div
-        style={{
-          padding: 15,
-          borderBottom: "1px solid #334155",
-          fontWeight: "bold",
-        }}
-      >
-        🤖 CodeNexus AI
-      </div>
-
-      <div
-        style={{
-          flex: 1,
-          padding: 15,
-          overflowY: "auto",
-          color: "#94a3b8",
-        }}
-      >
-        Ask AI to build or improve your website...
-      </div>
-
+      {/* Mode Buttons */}
       <div
         style={{
           display: "flex",
-          padding: 10,
-          borderTop: "1px solid #334155",
+          gap: 10,
+          marginBottom: 12,
+        }}
+      >
+        <button
+          onClick={() => setMode("generate")}
+          style={{
+            background:
+              mode === "generate"
+                ? "#2563eb"
+                : "#1e293b",
+            color: "white",
+            border: "none",
+            padding: "8px 15px",
+            borderRadius: 8,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <Sparkles size={16} />
+          Generate
+        </button>
+
+        <button
+          onClick={() => setMode("edit")}
+          style={{
+            background:
+              mode === "edit"
+                ? "#2563eb"
+                : "#1e293b",
+            color: "white",
+            border: "none",
+            padding: "8px 15px",
+            borderRadius: 8,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <Pencil size={16} />
+          Edit
+        </button>
+      </div>
+
+      {/* Prompt */}
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
         }}
       >
         <input
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Create landing page..."
+          placeholder={
+            mode === "generate"
+              ? "Create a portfolio website..."
+              : "Make navbar blue..."
+          }
           style={{
             flex: 1,
             background: "#1e293b",
             color: "white",
             border: "none",
-            padding: 10,
+            outline: "none",
+            padding: 12,
             borderRadius: 8,
           }}
         />
 
         <button
-          onClick={handleSend}
           disabled={loading}
+          onClick={handleSend}
           style={{
-            marginLeft: 8,
             background: "#2563eb",
-            border: "none",
             color: "white",
-            padding: "0 16px",
+            border: "none",
+            padding: "0 18px",
             borderRadius: 8,
             cursor: "pointer",
           }}

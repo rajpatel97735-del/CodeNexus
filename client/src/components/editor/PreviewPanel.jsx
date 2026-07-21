@@ -1,4 +1,20 @@
+import { useState } from "react";
+import { Monitor, Tablet, Smartphone } from "lucide-react";
+
 export default function PreviewPanel({ srcDoc }) {
+  const [device, setDevice] = useState("desktop");
+
+  const getWidth = () => {
+    switch (device) {
+      case "mobile":
+        return "390px";
+      case "tablet":
+        return "768px";
+      default:
+        return "100%";
+    }
+  };
+
   return (
     <div
       style={{
@@ -11,10 +27,10 @@ export default function PreviewPanel({ srcDoc }) {
         flexDirection: "column",
       }}
     >
-      {/* Browser Header */}
+      {/* Header */}
       <div
         style={{
-          height: "45px",
+          height: "50px",
           background: "#1e293b",
           display: "flex",
           alignItems: "center",
@@ -24,52 +40,120 @@ export default function PreviewPanel({ srcDoc }) {
           borderBottom: "1px solid #334155",
         }}
       >
-        <div style={{ display: "flex", gap: "8px" }}>
+        {/* Left */}
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+          }}
+        >
           <span
             style={{
-              width: "12px",
-              height: "12px",
+              width: 12,
+              height: 12,
               borderRadius: "50%",
               background: "#ef4444",
             }}
           />
+
           <span
             style={{
-              width: "12px",
-              height: "12px",
+              width: 12,
+              height: 12,
               borderRadius: "50%",
               background: "#f59e0b",
             }}
           />
+
           <span
             style={{
-              width: "12px",
-              height: "12px",
+              width: 12,
+              height: 12,
               borderRadius: "50%",
               background: "#22c55e",
             }}
           />
         </div>
 
-        <div style={{ fontWeight: "bold" }}>
-          🌐 Live Preview
+        {/* Center */}
+        <div
+          style={{
+            display: "flex",
+            gap: 10,
+          }}
+        >
+          <button
+            onClick={() => setDevice("desktop")}
+            style={buttonStyle(device === "desktop")}
+          >
+            <Monitor size={17} />
+          </button>
+
+          <button
+            onClick={() => setDevice("tablet")}
+            style={buttonStyle(device === "tablet")}
+          >
+            <Tablet size={17} />
+          </button>
+
+          <button
+            onClick={() => setDevice("mobile")}
+            style={buttonStyle(device === "mobile")}
+          >
+            <Smartphone size={17} />
+          </button>
         </div>
 
-        <div style={{ fontSize: "12px", color: "#94a3b8" }}>
-          Running...
+        {/* Right */}
+        <div
+          style={{
+            fontSize: 12,
+            color: "#94a3b8",
+          }}
+        >
+          {device.toUpperCase()}
         </div>
       </div>
 
-      {/* Preview */}
-      <iframe
-        title="preview"
-        srcDoc={srcDoc}
+      {/* Preview Area */}
+      <div
         style={{
           flex: 1,
-          border: "none",
-          background: "#fff",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "flex-start",
+          overflow: "auto",
+          background: "#dbeafe",
+          padding: 20,
         }}
-      />
+      >
+        <iframe
+          title="preview"
+          srcDoc={srcDoc}
+          style={{
+            width: getWidth(),
+            height: "100%",
+            border: "none",
+            background: "#fff",
+            transition: "0.35s",
+            borderRadius: 10,
+            boxShadow: "0 10px 30px rgba(0,0,0,.2)",
+          }}
+        />
+      </div>
     </div>
   );
 }
+
+const buttonStyle = (active) => ({
+  border: "none",
+  cursor: "pointer",
+  background: active ? "#2563eb" : "#334155",
+  color: "white",
+  width: 36,
+  height: 36,
+  borderRadius: 8,
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+});

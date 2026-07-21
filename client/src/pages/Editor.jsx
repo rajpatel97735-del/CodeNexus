@@ -2,7 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import MonacoEditor from "@monaco-editor/react";
 import { useParams } from "react-router-dom";
 import { getProject, updateProject } from "../services/project.service";
-import { generateWebsite } from "../services/ai.service";
+import {
+  generateWebsite,
+  editWebsite,
+  fixWebsite,
+} from "../services/ai.service";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import AIPanel from "../components/editor/AIPanel";
@@ -10,6 +14,12 @@ import TopBar from "../components/editor/TopBar";
 import Explorer from "../components/editor/Explorer";
 import FileTabs from "../components/editor/FileTabs";
 import PreviewPanel from "../components/editor/PreviewPanel";
+import HistoryPanel from "../components/editor/HistoryPanel";
+import ChatHistory from "../components/editor/ChatHistory";
+import TemplatesPanel from "../templates/TemplatesPanel";
+import Sidebar from "../components/sidebar/Sidebar";
+import ComponentLibrary from "../components/library/ComponentLibrary";
+import toast from "react-hot-toast";
 
 function Editor() {
   const { id } = useParams();
@@ -22,15 +32,18 @@ function Editor() {
   color:blue;
   text-align:center;
 }`);
-
+const [history, setHistory] = useState([]);
+const [historyIndex, setHistoryIndex] = useState(-1);
   const [javascript, setJavascript] = useState(
     `console.log("Hello Raj");`
   );
-
+const [activePanel, setActivePanel] =
+    useState("explorer");
   const [activeTab, setActiveTab] = useState("html");
   const [saveStatus, setSaveStatus] = useState("Saved");
 const [editorWidth, setEditorWidth] = useState(50);
 const isDragging = useRef(false);
+const [chatHistory, setChatHistory] = useState([]);
 
   useEffect(() => {
     const loadProject = async () => {
@@ -61,6 +74,17 @@ const isDragging = useRef(false);
       loadProject();
     }
   }, [id]);
+  const addMessage = (sender, message) => {
+  setChatHistory((prev) => [
+    ...prev,
+    {
+      id: Date.now(),
+      sender,
+      message,
+      time: new Date().toLocaleTimeString(),
+    },
+  ]);
+};
 
   const handleSave = async () => {
     try {
@@ -105,19 +129,137 @@ const [activeFile, setActiveFile] = useState("html");
       handleSave();
     }, 2000);
   };
+  const saveVersion = (newHtml, newCss, newJavascript) => {
+  const newHistory = history.slice(0, historyIndex + 1);
+
+  newHistory.push({
+    html: newHtml,
+    css: newCss,
+    javascript: newJavascript,
+    createdAt: new Date().toLocaleTimeString(),
+  });
+
+  setHistory(newHistory);
+  setHistoryIndex(newHistory.length - 1);
+};
 
   const handleGenerate = async (prompt) => {
-    try {
-      const res = await generateWebsite(prompt);
+  try {
+    // User message
+    addMessage("user", prompt);
 
-      setHtml(res.data.html);
-      setCss(res.data.css);
-      setJavascript(res.data.javascript);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    const res = await generateWebsite(prompt);
 
+    setHtml(res.data.html);
+    setCss(res.data.css);
+    setJavascript(res.data.javascript);
+
+    // Save Version
+    saveVersion(
+      res.data.html,
+      res.data.css,
+      res.data.javascript
+    );
+
+    // AI message
+    toast.success("Website Generated Successfully");
+  } catch (err) {
+    console.error(err);
+
+    toast.success("ai", "❌ Failed to Generate Website");
+  }
+};
+  const handleEdit = async (prompt) => {
+  try {
+    // User message
+    addMessage("user", prompt);
+
+    const res = await editWebsite({
+      prompt,
+      html,
+      css,
+      javascript,
+    });
+
+    setHtml(res.data.html);
+    setCss(res.data.css);
+    setJavascript(res.data.javascript);
+
+    // Save Version
+    saveVersion(
+      res.data.html,
+      res.data.css,
+      res.data.javascript
+    );
+
+    // AI message
+toast.success("Website Updated Successfully");
+  } catch (err) {
+    console.error(err);
+
+    toast.success("ai", "❌ Failed to Update Website");
+  }
+};
+const handleFix = async () => {
+  try {
+    addMessage("user", "🛠 Fix my website");
+
+    const res = await fixWebsite({
+      html,
+      css,
+      javascript,
+    });
+
+    setHtml(res.data.html);
+    setCss(res.data.css);
+    setJavascript(res.data.javascript);
+
+    saveVersion(
+      res.data.html,
+      res.data.css,
+      res.data.javascript
+    );
+
+   toast.success("Website Fixed Successfully");
+  } catch (err) {
+    console.error(err);
+    toast.success("ai", "❌ Failed to Fix Website");
+  }
+};
+const handleUndo = () => {
+  if (historyIndex <= 0) return;
+
+  const previous = history[historyIndex - 1];
+
+  setHtml(previous.html);
+  setCss(previous.css);
+  setJavascript(previous.javascript);
+
+  setHistoryIndex(historyIndex - 1);
+};
+
+const handleRedo = () => {
+  if (historyIndex >= history.length - 1) return;
+
+  const next = history[historyIndex + 1];
+
+  setHtml(next.html);
+  setCss(next.css);
+  setJavascript(next.javascript);
+
+  setHistoryIndex(historyIndex + 1);
+};
+const restoreVersion = (index) => {
+  const version = history[index];
+
+  if (!version) return;
+
+  setHtml(version.html);
+  setCss(version.css);
+  setJavascript(version.javascript);
+
+  setHistoryIndex(index);
+};
   const handleDownload = async () => {
     try {
       const zip = new JSZip();
@@ -184,10 +326,14 @@ ${javascript}
     background: "#0f172a",
   }}
 >
-      <TopBar
-    onSave={handleSave}
-    onExport={handleDownload}
-    saveStatus={saveStatus}
+ <TopBar
+  onSave={handleSave}
+  onExport={handleDownload}
+  onRun={() => {}}
+  onUndo={handleUndo}
+  onRedo={handleRedo}
+  onFix={handleFix}
+  saveStatus={saveStatus}
 />
 <div
   style={{
@@ -196,7 +342,10 @@ ${javascript}
   }}
 ></div>
       {/* ================= Sidebar ================= */}
-
+<Sidebar
+    active={activePanel}
+    onChange={setActivePanel}
+/>
       <Explorer
   files={files}
   activeFile={activeFile}
@@ -241,7 +390,10 @@ ${javascript}
         </div>
         
 
-        <AIPanel onGenerate={handleGenerate} />
+        <AIPanel
+  onGenerate={handleGenerate}
+  onEdit={handleEdit}
+/>
 
         {/* ================= Editor + Preview ================= */}
 
@@ -297,6 +449,31 @@ ${javascript}
           {/* Right */}
 
           <PreviewPanel srcDoc={srcDoc} />
+
+{activePanel === "history" && (
+  <HistoryPanel
+    history={history}
+    historyIndex={historyIndex}
+    onRestore={restoreVersion}
+  />
+)}
+
+{activePanel === "chat" && (
+  <ChatHistory history={chatHistory} />
+)}
+
+{activePanel === "templates" && (
+  <TemplatesPanel
+    onGenerate={handleGenerate}
+  />
+)}
+{activePanel === "components" && (
+  <ComponentLibrary
+    onSelect={(component) =>
+      handleEdit(`Add a modern ${component.name} section`)
+    }
+  />
+)}
         </div>
         </div>
     </div>
