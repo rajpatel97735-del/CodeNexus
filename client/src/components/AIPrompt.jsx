@@ -109,7 +109,7 @@ overflowY: "auto",
       {/* Send Button */}
       <button
         onClick={onSubmit}
-        disabled={loading}
+      
         disabled={loading || !prompt.trim()}
         style={{
           marginTop: "20px",

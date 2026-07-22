@@ -50,7 +50,12 @@ export default function useProject({
         javascript,
       });
 
-      setSaveStatus("✅ Saved");
+     setSaveStatus(
+  `✅ Saved • ${new Date().toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  })}`
+);
     } catch (err) {
       console.error(err);
 
