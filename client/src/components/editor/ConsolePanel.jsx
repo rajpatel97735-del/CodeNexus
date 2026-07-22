@@ -1,10 +1,9 @@
 import { useEffect, useRef } from "react";
-import { Trash2, Terminal } from "lucide-react";
-import { useConsole } from "../../context/ConsoleContext";
 
-export default function ConsolePanel() {
-  const { logs, clearLogs } = useConsole();
-
+export default function ConsolePanel({
+  logs = [],
+  onClear,
+}) {
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -15,62 +14,55 @@ export default function ConsolePanel() {
 
   const getColor = (type) => {
     switch (type) {
-      case "success":
-        return "#22c55e";
-
       case "error":
         return "#ef4444";
 
+      case "success":
+        return "#22c55e";
+
       case "warning":
-        return "#f59e0b";
+        return "#facc15";
 
       default:
-        return "#60a5fa";
+        return "#38bdf8";
     }
   };
 
   return (
     <div
       style={{
-        height: "100%",
+        height: "220px",
+        background: "#0f172a",
+        borderTop: "1px solid #334155",
         display: "flex",
         flexDirection: "column",
-        background: "#0f172a",
-        color: "white",
       }}
     >
       <div
         style={{
-          height: 45,
+          height: 50,
           display: "flex",
-          alignItems: "center",
           justifyContent: "space-between",
+          alignItems: "center",
           padding: "0 15px",
+          color: "white",
           borderBottom: "1px solid #334155",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            alignItems: "center",
-            fontWeight: 600,
-          }}
-        >
-          <Terminal size={18} />
-          Console
-        </div>
+        <b>🖥 CodeNexus Console</b>
 
         <button
-          onClick={clearLogs}
+          onClick={onClear}
           style={{
+            background: "#dc2626",
+            color: "white",
             border: "none",
-            background: "transparent",
-            color: "#cbd5e1",
+            padding: "6px 12px",
+            borderRadius: 6,
             cursor: "pointer",
           }}
         >
-          <Trash2 size={18} />
+          🗑 Clear
         </button>
       </div>
 
@@ -78,28 +70,36 @@ export default function ConsolePanel() {
         style={{
           flex: 1,
           overflowY: "auto",
-          padding: 15,
-          fontFamily: "Consolas",
+          padding: 12,
+          fontFamily: "Consolas, monospace",
           fontSize: 14,
         }}
       >
-        {logs.length === 0 && (
+        {logs.length === 0 ? (
           <div style={{ color: "#64748b" }}>
-            No logs available...
+            No Logs...
           </div>
-        )}
+        ) : (
+          logs.map((log) => (
+            <div
+              key={log.id}
+              style={{
+                color: getColor(log.type),
+                marginBottom: 8,
+                display: "flex",
+                gap: 10,
+              }}
+            >
+              <span style={{ color: "#64748b" }}>
+                {log.time}
+              </span>
 
-        {logs.map((log) => (
-          <div
-            key={log.id}
-            style={{
-              color: getColor(log.type),
-              marginBottom: 8,
-            }}
-          >
-            [{log.time}] {log.message}
-          </div>
-        ))}
+              <span>
+                {">"} {log.message}
+              </span>
+            </div>
+          ))
+        )}
 
         <div ref={bottomRef}></div>
       </div>

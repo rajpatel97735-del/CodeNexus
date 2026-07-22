@@ -1,120 +1,67 @@
 import { useState } from "react";
-
-function AIPanel({ onGenerate, onEdit }) {
+import AIHeader from "../AIHeader";
+import AIPrompt from "../AIPrompt";
+import AIConversation from "./AIConversation";
+function AIPanel({
+    onAgent,
+    history,
+    aiTyping,
+}) {
   const [prompt, setPrompt] = useState("");
-  const [mode, setMode] = useState("generate");
+ 
   const [loading, setLoading] = useState(false);
 
+ const quickPrompts = [
+  "Create Portfolio Website",
+  "Create Netflix Clone",
+  "Create Admin Dashboard",
+  "Build Restaurant Website",
+  "Build E-Commerce Store",
+  "Create Login Page",
+];
   const handleSubmit = async () => {
     if (!prompt.trim()) return;
 
     setLoading(true);
 
     try {
-      if (mode === "generate") {
-        await onGenerate(prompt);
-      } else {
-        await onEdit(prompt);
-      }
+    await onAgent(prompt);
 
       setPrompt("");
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
     <div
       style={{
-        background: "#1e293b",
+        background: "#0f172a",
+        border: "1px solid #334155",
+        borderRadius: "14px",
         padding: "20px",
-        borderRadius: "10px",
         marginBottom: "20px",
       }}
     >
-      <h2 style={{ color: "white" }}>
-        🤖 CodeNexus AI
-      </h2>
+      {/* Header */}
+      <AIHeader />
+      <AIConversation
+    history={history}
+    aiTyping={aiTyping}
+/>
 
-      {/* Mode Buttons */}
-      <div
-        style={{
-          display: "flex",
-          gap: "10px",
-          marginTop: "15px",
-          marginBottom: "15px",
-        }}
-      >
-        <button
-          onClick={() => setMode("generate")}
-          style={{
-            padding: "10px 20px",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-            background:
-              mode === "generate" ? "#2563eb" : "#334155",
-            color: "white",
-          }}
-        >
-          🚀 Generate
-        </button>
+     
 
-        <button
-          onClick={() => setMode("edit")}
-          style={{
-            padding: "10px 20px",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-            background:
-              mode === "edit" ? "#2563eb" : "#334155",
-            color: "white",
-          }}
-        >
-          ✏️ Edit
-        </button>
-      </div>
-
-      <textarea
-        value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-        placeholder={
-          mode === "generate"
-            ? "Create a Portfolio Website..."
-            : "Make navbar black..."
-        }
-        style={{
-          width: "100%",
-          height: "120px",
-          marginTop: "10px",
-          padding: "10px",
-          borderRadius: "8px",
-          resize: "none",
-        }}
-      />
-
-      <button
-        onClick={handleSubmit}
-        disabled={loading}
-        style={{
-          marginTop: "15px",
-          background: "#2563eb",
-          color: "white",
-          border: "none",
-          padding: "12px 25px",
-          borderRadius: "8px",
-          cursor: "pointer",
-        }}
-      >
-        {loading
-          ? "Generating..."
-          : mode === "generate"
-          ? "🚀 Generate"
-          : "✏️ Edit Website"}
-      </button>
+      {/* Prompt */}
+      <AIPrompt
+  prompt={prompt}
+  setPrompt={setPrompt}
+  loading={loading}
+  quickPrompts={quickPrompts}
+  onSubmit={handleSubmit}
+/>
     </div>
   );
 }

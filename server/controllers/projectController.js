@@ -88,11 +88,36 @@ export const getProject = async (req, res) => {
 // =======================
 export const updateProject = async (req, res) => {
   try {
+    const {
+      title,
+      description,
+      language,
+      html,
+      css,
+      javascript,
+      chatHistory,
+    } = req.body;
+
+    const updateData = {
+      title,
+      description,
+      language,
+      html,
+      css,
+      javascript,
+    };
+
+    // Chat history only if provided
+    if (chatHistory !== undefined) {
+      updateData.chatHistory = chatHistory;
+    }
+
     const project = await Project.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       {
         new: true,
+        runValidators: true,
       }
     );
 
@@ -115,7 +140,6 @@ export const updateProject = async (req, res) => {
     });
   }
 };
-
 // =======================
 // Delete Project
 // =======================

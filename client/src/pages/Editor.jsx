@@ -1,12 +1,14 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import MonacoEditor from "@monaco-editor/react";
 import { useParams } from "react-router-dom";
-import { getProject, updateProject } from "../services/project.service";
-import {
-  generateWebsite,
-  editWebsite,
-  fixWebsite,
-} from "../services/ai.service";
+import ChangesPreview from "../components/editor/ChangesPreview";
+import useHistory from "../hooks/useHistory";
+import ConsolePanel from "../components/editor/ConsolePanel";
+
+import useProject from "../hooks/useProject";
+import useEditorAI from "../hooks/useEditorAI";
+import useConsole from "../hooks/useConsole";
+import useAutoSave from "../hooks/useAutoSave";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import AIPanel from "../components/editor/AIPanel";
@@ -19,247 +21,148 @@ import ChatHistory from "../components/editor/ChatHistory";
 import TemplatesPanel from "../templates/TemplatesPanel";
 import Sidebar from "../components/sidebar/Sidebar";
 import ComponentLibrary from "../components/library/ComponentLibrary";
-import toast from "react-hot-toast";
+import usePreview from "../hooks/usePreview";
+import { useFiles } from "../context/FileContext";
+import useEditorSettings from "../hooks/useEditorSettings";
+import useAIStatus from "../hooks/useAIStatus";
+import useCodeReview from "../hooks/useCodeReview";
+
+
 
 function Editor() {
+  const {
+  files,
+  updateContent,
+  getContent,
+  replaceContent,
+} = useFiles();
+const {
+  html,
+  css,
+  javascript,
+} = getContent();
   const { id } = useParams();
 
-  const saveTimeout = useRef(null);
+const aiStatus = useAIStatus();
+const { issues, analyze } = useCodeReview();
+  
+const {
+  consoleLogs,
+  addConsoleLog,
+  clearConsole,
+} = useConsole();
+const [pendingChanges, setPendingChanges] = useState(null);
+const [chatHistory, setChatHistory] = useState([]);
+const {
+  versionHistory,
+  historyIndex,
+  saveVersion,
+  handleUndo,
+  handleRedo,
+  restoreVersion,
+} = useHistory(updateContent, addConsoleLog);
 
-  const [html, setHtml] = useState("<h1>Welcome to CodeNexus 🚀</h1>");
-
-  const [css, setCss] = useState(`h1{
-  color:blue;
-  text-align:center;
-}`);
-const [history, setHistory] = useState([]);
-const [historyIndex, setHistoryIndex] = useState(-1);
-  const [javascript, setJavascript] = useState(
-    `console.log("Hello Raj");`
-  );
+  
+ //const [openTabs, setOpenTabs] = useState([]);
+ 
 const [activePanel, setActivePanel] =
     useState("explorer");
-  const [activeTab, setActiveTab] = useState("html");
+  
   const [saveStatus, setSaveStatus] = useState("Saved");
-const [editorWidth, setEditorWidth] = useState(50);
-const isDragging = useRef(false);
-const [chatHistory, setChatHistory] = useState([]);
 
-  useEffect(() => {
-    const loadProject = async () => {
-      try {
-        const res = await getProject(id);
+const {
+  loadProject,
+  saveChatHistory,
+  handleSave,
+} = useProject({
+  id,
+  getContent,
+  replaceContent,
+  setChatHistory,
+  setSaveStatus,
+});
+const {
+  srcDoc,
+  previewErrors,
+} = usePreview(files);
+const [aiTyping, setAiTyping] = useState(false);
+const {
+  editorTheme,
+  setEditorTheme,
+  fontSize,
+  setFontSize,
+  wordWrap,
+  setWordWrap,
+  minimap,
+  setMinimap,
+  previewMode,
+  setPreviewMode,
+} = useEditorSettings();
+useEffect(() => {
+  addConsoleLog("🚀 CodeNexus Editor Started", "info");
+}, []);
 
-        const project = res.data.project;
-
-        setHtml(project.html || "<h1>Welcome to CodeNexus 🚀</h1>");
-
-        setCss(
-          project.css ||
-            `h1{
-  color:blue;
-  text-align:center;
-}`
-        );
-
-        setJavascript(
-          project.javascript || `console.log("Hello Raj");`
-        );
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    if (id) {
-      loadProject();
-    }
-  }, [id]);
-  const addMessage = (sender, message) => {
-  setChatHistory((prev) => [
-    ...prev,
+useEffect(() => {
+  if (id) {
+    loadProject();
+  }
+}, [id]);
+  
+ const addMessage = (sender, message) => {
+  const newHistory = [
+    ...chatHistory,
     {
       id: Date.now(),
       sender,
       message,
-      time: new Date().toLocaleTimeString(),
+      time: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
     },
-  ]);
+  ];
+
+  setChatHistory(newHistory);
+
+  return newHistory;
+
 };
 
-  const handleSave = async () => {
-    try {
-      await updateProject(id, {
-        html,
-        css,
-        javascript,
-      });
-
-      setSaveStatus("✅ Saved");
-    } catch (err) {
-      console.error(err);
-      setSaveStatus("❌ Error");
-    }
-  };
-  const files = [
-  {
-    id: "html",
-    name: "index.html",
-    icon: "📄",
-  },
-  {
-    id: "css",
-    name: "style.css",
-    icon: "🎨",
-  },
-  {
-    id: "javascript",
-    name: "script.js",
-    icon: "⚡",
-  },
-];
 
 const [activeFile, setActiveFile] = useState("html");
+const currentFile = files.find(
+  (file) => file.id === activeFile
+);
 
-  const autoSave = () => {
-    setSaveStatus("💾 Saving...");
+const { autoSave } = useAutoSave(
+  handleSave,
+  setSaveStatus
+);
+ 
+  const {
+  handleGenerate: aiGenerate,
+  handleEdit: aiEdit,
+  handleFix: aiFix,
+  handleOptimize: aiOptimize,
+  handleExplain: aiExplain,
+  handleAgent: aiAgent,
+} = useEditorAI({
+  getContent,
+  replaceContent,
+  addConsoleLog,
+  addMessage,
+  saveVersion,
+  saveChatHistory,
+  setChatHistory,
+  aiStatus,
+  setAiTyping,
 
-    clearTimeout(saveTimeout.current);
+  // NEW
+  setPendingChanges,
+});
 
-    saveTimeout.current = setTimeout(() => {
-      handleSave();
-    }, 2000);
-  };
-  const saveVersion = (newHtml, newCss, newJavascript) => {
-  const newHistory = history.slice(0, historyIndex + 1);
 
-  newHistory.push({
-    html: newHtml,
-    css: newCss,
-    javascript: newJavascript,
-    createdAt: new Date().toLocaleTimeString(),
-  });
 
-  setHistory(newHistory);
-  setHistoryIndex(newHistory.length - 1);
-};
-
-  const handleGenerate = async (prompt) => {
-  try {
-    // User message
-    addMessage("user", prompt);
-
-    const res = await generateWebsite(prompt);
-
-    setHtml(res.data.html);
-    setCss(res.data.css);
-    setJavascript(res.data.javascript);
-
-    // Save Version
-    saveVersion(
-      res.data.html,
-      res.data.css,
-      res.data.javascript
-    );
-
-    // AI message
-    toast.success("Website Generated Successfully");
-  } catch (err) {
-    console.error(err);
-
-    toast.success("ai", "❌ Failed to Generate Website");
-  }
-};
-  const handleEdit = async (prompt) => {
-  try {
-    // User message
-    addMessage("user", prompt);
-
-    const res = await editWebsite({
-      prompt,
-      html,
-      css,
-      javascript,
-    });
-
-    setHtml(res.data.html);
-    setCss(res.data.css);
-    setJavascript(res.data.javascript);
-
-    // Save Version
-    saveVersion(
-      res.data.html,
-      res.data.css,
-      res.data.javascript
-    );
-
-    // AI message
-toast.success("Website Updated Successfully");
-  } catch (err) {
-    console.error(err);
-
-    toast.success("ai", "❌ Failed to Update Website");
-  }
-};
-const handleFix = async () => {
-  try {
-    addMessage("user", "🛠 Fix my website");
-
-    const res = await fixWebsite({
-      html,
-      css,
-      javascript,
-    });
-
-    setHtml(res.data.html);
-    setCss(res.data.css);
-    setJavascript(res.data.javascript);
-
-    saveVersion(
-      res.data.html,
-      res.data.css,
-      res.data.javascript
-    );
-
-   toast.success("Website Fixed Successfully");
-  } catch (err) {
-    console.error(err);
-    toast.success("ai", "❌ Failed to Fix Website");
-  }
-};
-const handleUndo = () => {
-  if (historyIndex <= 0) return;
-
-  const previous = history[historyIndex - 1];
-
-  setHtml(previous.html);
-  setCss(previous.css);
-  setJavascript(previous.javascript);
-
-  setHistoryIndex(historyIndex - 1);
-};
-
-const handleRedo = () => {
-  if (historyIndex >= history.length - 1) return;
-
-  const next = history[historyIndex + 1];
-
-  setHtml(next.html);
-  setCss(next.css);
-  setJavascript(next.javascript);
-
-  setHistoryIndex(historyIndex + 1);
-};
-const restoreVersion = (index) => {
-  const version = history[index];
-
-  if (!version) return;
-
-  setHtml(version.html);
-  setCss(version.css);
-  setJavascript(version.javascript);
-
-  setHistoryIndex(index);
-};
   const handleDownload = async () => {
     try {
       const zip = new JSZip();
@@ -295,28 +198,31 @@ ${html}
       alert("Download Failed");
     }
   };
+  const applyChanges = () => {
+  if (!pendingChanges) return;
 
-  const srcDoc = `
-<!DOCTYPE html>
-<html>
-<head>
-<style>
-${css}
-</style>
-</head>
+  replaceContent(pendingChanges);
 
-<body>
+  saveVersion(
+    pendingChanges.html,
+    pendingChanges.css,
+    pendingChanges.javascript
+  );
 
-${html}
+  setPendingChanges(null);
 
-<script>
-${javascript}
-<\/script>
+  addConsoleLog("AI changes applied", "success");
+};
+const rejectChanges = () => {
+  setPendingChanges(null);
 
-</body>
-</html>
-`;
+  addConsoleLog("AI changes rejected", "info");
+};
+//console.log("HTML:", html);
+//console.log("CSS:", css);
+//console.log("JS:", javascript);
 
+  
   return (
        <div
   style={{
@@ -332,26 +238,21 @@ ${javascript}
   onRun={() => {}}
   onUndo={handleUndo}
   onRedo={handleRedo}
-  onFix={handleFix}
+  onFix={aiFix}
   saveStatus={saveStatus}
 />
-<div
-  style={{
-    display: "flex",
-    flex: 1,
-  }}
-></div>
+
+
       {/* ================= Sidebar ================= */}
 <Sidebar
     active={activePanel}
     onChange={setActivePanel}
 />
-      <Explorer
-  files={files}
+   <Explorer
   activeFile={activeFile}
   setActiveFile={setActiveFile}
+ 
 />
-
       {/* ================= Main ================= */}
 
       <div
@@ -389,12 +290,16 @@ ${javascript}
          
         </div>
         
-
-        <AIPanel
-  onGenerate={handleGenerate}
-  onEdit={handleEdit}
+<AIPanel
+    onAgent={aiAgent}
+    history={chatHistory}
+    aiTyping={aiTyping}
 />
-
+<ChangesPreview
+  pendingChanges={pendingChanges}
+  onApply={applyChanges}
+  onReject={rejectChanges}
+/>
         {/* ================= Editor + Preview ================= */}
 
         <div
@@ -415,62 +320,78 @@ ${javascript}
               overflow: "hidden",
             }}
           >
-            <FileTabs
-  files={files}
+           <FileTabs
   activeFile={activeFile}
   setActiveFile={setActiveFile}
 />
-            <MonacoEditor
-              height="100%"
-              language={activeFile}
-              theme="vs-dark"
-              value={
-  activeFile === "html"
-    ? html
-    : activeFile === "css"
-    ? css
-    : javascript
-}
-              onChange={(value) => {
-                if (activeFile === "html") {
-                  setHtml(value || "");
-                  autoSave();
-                } else if (activeFile === "css") {
-                  setCss(value || "");
-                  autoSave();
-                } else {
-                  setJavascript(value || "");
-                  autoSave();
-                }
-              }}
-            />
+{/*
+<EditorTabs
+  openTabs={openTabs}
+  setOpenTabs={setOpenTabs}
+  activeFile={activeFile}
+  setActiveFile={setActiveFile}
+/>*/}
+           <MonacoEditor
+  height="100%"
+  language={activeFile}
+  theme={editorTheme}
+  value={currentFile?.content || ""}
+  options={{
+    fontSize,
+    wordWrap,
+    minimap: {
+      enabled: minimap,
+    },
+    automaticLayout: true,
+    scrollBeyondLastLine: false,
+    smoothScrolling: true,
+    cursorBlinking: "smooth",
+    roundedSelection: true,
+    padding: {
+      top: 12,
+    },
+  }}
+  onChange={(value) => {
+  updateContent(
+    activeFile,
+    value || ""
+  );
+}}
+/>
           </div>
 
           {/* Right */}
 
           <PreviewPanel srcDoc={srcDoc} />
+        <ConsolePanel
+  logs={consoleLogs}
+  onClear={clearConsole}
+/>
 
 {activePanel === "history" && (
-  <HistoryPanel
-    history={history}
-    historyIndex={historyIndex}
-    onRestore={restoreVersion}
-  />
+ <HistoryPanel
+  history={versionHistory}
+  historyIndex={historyIndex}
+  onRestore={restoreVersion}
+/>
 )}
 
 {activePanel === "chat" && (
-  <ChatHistory history={chatHistory} />
+ <ChatHistory
+  history={chatHistory}
+  aiTyping={aiTyping}
+/>
 )}
 
 {activePanel === "templates" && (
   <TemplatesPanel
-    onGenerate={handleGenerate}
+    onGenerate={aiGenerate}
   />
 )}
 {activePanel === "components" && (
   <ComponentLibrary
     onSelect={(component) =>
-      handleEdit(`Add a modern ${component.name} section`)
+      aiEdit(`Add a modern ${component.name} section`)
     }
   />
 )}

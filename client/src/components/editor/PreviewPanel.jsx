@@ -3,7 +3,7 @@ import { Monitor, Tablet, Smartphone } from "lucide-react";
 
 export default function PreviewPanel({ srcDoc }) {
   const [device, setDevice] = useState("desktop");
-
+const [pendingChanges, setPendingChanges] = useState(null);
   const getWidth = () => {
     switch (device) {
       case "mobile":
@@ -16,6 +16,7 @@ export default function PreviewPanel({ srcDoc }) {
   };
 
   return (
+    
     <div
       style={{
         flex: 1,
@@ -144,6 +145,7 @@ export default function PreviewPanel({ srcDoc }) {
     </div>
   );
 }
+
 
 const buttonStyle = (active) => ({
   border: "none",

@@ -1,8 +1,9 @@
+import { useFiles } from "../../context/FileContext";
 export default function FileTabs({
-  files,
   activeFile,
   setActiveFile,
 }) {
+  const { files } = useFiles();
   return (
     <div
       style={{

@@ -33,7 +33,24 @@ const projectSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+chatHistory: [
+  {
+    sender: {
+      type: String,
+      enum: ["user", "ai"],
+    },
 
+    message: {
+      type: String,
+      required: true,
+    },
+
+    time: {
+      type: String,
+      default: "",
+    },
+  },
+],
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

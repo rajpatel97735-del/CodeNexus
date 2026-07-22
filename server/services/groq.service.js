@@ -199,6 +199,7 @@ ${prompt}
     javascript: updatedJavascript,
   };
 }
+// ================= FIX WEBSITE =================
 export async function fixWebsiteFromAI({
   html,
   css,
@@ -216,7 +217,6 @@ You are an expert frontend developer.
 Your job is to FIX errors in the given website.
 
 Fix:
-
 - HTML syntax
 - CSS syntax
 - JavaScript syntax
@@ -225,7 +225,6 @@ Fix:
 - Invalid code
 
 Do NOT redesign the website.
-
 Keep the same UI.
 
 Return ONLY this format.
@@ -240,7 +239,6 @@ Return ONLY this format.
 (updated javascript)
 
 Rules:
-
 - Return COMPLETE code.
 - No markdown.
 - No JSON.
@@ -259,15 +257,12 @@ Rules:
         role: "user",
         content: `
 Current HTML:
-
 ${html}
 
 Current CSS:
-
 ${css}
 
 Current JavaScript:
-
 ${javascript}
 `,
       },
@@ -287,13 +282,145 @@ ${javascript}
   const fixedCss = extractSection(text, "CSS");
   const fixedJavascript = extractSection(text, "JAVASCRIPT");
 
-  if (!fixedHtml && !fixedCss && !fixedJavascript) {
-    throw new Error("AI response format is invalid.");
-  }
-
   return {
     html: fixedHtml,
     css: fixedCss,
     javascript: fixedJavascript,
   };
+}
+
+// ================= OPTIMIZE WEBSITE =================
+export async function optimizeWebsiteFromAI({
+  html,
+  css,
+  javascript,
+}) {
+  const completion = await groq.chat.completions.create({
+    model: "llama-3.3-70b-versatile",
+    temperature: 0.2,
+    messages: [
+      {
+        role: "system",
+        content: `
+You are an expert frontend developer.
+
+Optimize the given website.
+
+Rules:
+- Improve HTML structure
+- Remove unnecessary code
+- Optimize CSS
+- Improve JavaScript
+- Improve performance
+- Improve responsiveness
+- Improve accessibility
+
+Return ONLY this format.
+
+###HTML###
+(updated html)
+
+###CSS###
+(updated css)
+
+###JAVASCRIPT###
+(updated javascript)
+`,
+      },
+      {
+        role: "user",
+        content: `
+HTML:
+${html}
+
+CSS:
+${css}
+
+JavaScript:
+${javascript}
+`,
+      },
+    ],
+  });
+
+  let text = completion.choices[0].message.content.trim();
+
+  text = text
+    .replace(/```html/gi, "")
+    .replace(/```css/gi, "")
+    .replace(/```javascript/gi, "")
+    .replace(/```js/gi, "")
+    .replace(/```/g, "");
+
+  const optimizedHtml = extractSection(text, "HTML");
+  const optimizedCss = extractSection(text, "CSS");
+  const optimizedJavascript = extractSection(text, "JAVASCRIPT");
+
+  return {
+    html: optimizedHtml,
+    css: optimizedCss,
+    javascript: optimizedJavascript,
+  };
+}
+
+// ================= EXPLAIN WEBSITE =================
+export async function explainWebsiteFromAI({
+  html,
+  css,
+  javascript,
+}) {
+  const completion = await groq.chat.completions.create({
+    model: "llama-3.3-70b-versatile",
+    temperature: 0.2,
+    messages: [
+      {
+        role: "system",
+        content: `
+You are an expert frontend developer.
+
+Analyze the given website.
+
+Return ONLY plain text.
+
+Explain using this format:
+
+HTML:
+...
+
+CSS:
+...
+
+JavaScript:
+...
+
+Performance:
+...
+
+Accessibility:
+...
+
+SEO:
+...
+
+Suggestions:
+...
+`,
+      },
+      {
+        role: "user",
+        content: `
+HTML:
+${html}
+
+CSS:
+${css}
+
+JavaScript:
+${javascript}
+`,
+      },
+    ],
+  });
+
+  return completion.choices[0].message.content.trim();
 }

@@ -6,6 +6,7 @@ import { useFiles } from "../../context/FileContext";
 export default function Explorer({
   activeFile,
   setActiveFile,
+  openFile,
 }) {
   const {
     files,
@@ -15,7 +16,16 @@ export default function Explorer({
   } = useFiles();
 
   const [fileName, setFileName] = useState("");
+const getFileIcon = (name) => {
+  if (name.endsWith(".html")) return "🌐";
+  if (name.endsWith(".css")) return "🎨";
+  if (name.endsWith(".js")) return "📜";
+  if (name.endsWith(".jsx")) return "⚛";
+  if (name.endsWith(".json")) return "📦";
+  if (name.endsWith(".md")) return "📝";
 
+  return "📄";
+};
   const createFile = () => {
     if (!fileName.trim()) return;
 
@@ -107,14 +117,14 @@ export default function Explorer({
             }}
           >
             <div
-              onClick={() => setActiveFile(file.id)}
+           onClick={() => setActiveFile(file.id)}
               style={{
                 display: "flex",
                 gap: 8,
                 alignItems: "center",
               }}
             >
-              <span>{file.icon}</span>
+             <span>{getFileIcon(file.name)}</span>
               <span>{file.name}</span>
             </div>
 
@@ -144,10 +154,14 @@ export default function Explorer({
                 style={{ cursor: "pointer" }}
                 onClick={() => deleteFile(file.id)}
               />
+             
             </div>
           </div>
         ))}
       </div>
     </div>
+    
+    
+
   );
 }
