@@ -1,154 +1,100 @@
-import { createContext, useContext, useState } from "react";
+/**
+ * ==========================================================
+ * CodeNexus AI
+ * File Context
+ * ==========================================================
+ */
 
-const FileContext = createContext();
+import {
+  createContext,
+  useContext,
+  useMemo,
+  useCallback,
+  useState,
+} from "react";
 
-export const FileProvider = ({ children }) => {
-  const defaultFiles = [
+const FileContext = createContext(null);
+
+export function FileProvider({ children }) {
+
+  /* ==========================================
+      FILE STATE
+  ========================================== */
+
+  const [files, setFiles] = useState([
     {
-      id: "html",
+      id: crypto.randomUUID(),
       name: "index.html",
-      language: "html",
-      icon: "📄",
-      content: "<h1>Welcome to CodeNexus 🚀</h1>",
       path: "index.html",
+      language: "html",
+      content: "<h1>Hello CodeNexus</h1>",
     },
     {
-      id: "css",
+      id: crypto.randomUUID(),
       name: "style.css",
+      path: "style.css",
       language: "css",
-      icon: "🎨",
-      content: `body{
-  margin:0;
-  padding:30px;
-  font-family:Arial;
-}`,
-      path: "css/style.css",
+      content: "body{font-family:sans-serif;}",
     },
     {
-      id: "javascript",
+      id: crypto.randomUUID(),
       name: "script.js",
+      path: "script.js",
       language: "javascript",
-      icon: "⚡",
-      content: `console.log("Welcome to CodeNexus");`,
-      path: "js/script.js",
+      content: "console.log('CodeNexus');",
     },
-  ];
-const [openTabs, setOpenTabs] = useState([
-  defaultFiles[0].id,
-]);
-  const [files, setFiles] = useState(defaultFiles);
-  const [activeFileId, setActiveFileId] = useState(defaultFiles[0].id);
+  ]);
 
-  const activeFile =
-    files.find((file) => file.id === activeFileId) || files[0];
+  const [activeFileId, setActiveFileId] = useState(null);
 
-  const getIcon = (language) => {
-    switch (language) {
-      case "html":
-        return "📄";
-      case "css":
-        return "🎨";
-      case "javascript":
-        return "⚡";
-      case "jsx":
-      case "tsx":
-        return "⚛️";
-      case "json":
-        return "🟨";
-      case "md":
-        return "📝";
-      default:
-        return "📄";
-    }
-  };
+  /* ==========================================
+      ACTIVE FILE
+  ========================================== */
 
-  const openFile = (id) => {
+  const activeFile = useMemo(() => {
 
-  if (!openTabs.includes(id)) {
+    if (!files.length) return null;
 
-    setOpenTabs((prev) => [...prev, id]);
-
-  }
-
-  setActiveFileId(id);
-
-};
-const closeTab = (id) => {
-
-  const remaining = openTabs.filter(
-    (tab) => tab !== id
-  );
-
-  setOpenTabs(remaining);
-
-  if (activeFileId === id && remaining.length) {
-
-    setActiveFileId(
-      remaining[remaining.length - 1]
+    return (
+      files.find(file => file.id === activeFileId) ??
+      files[0]
     );
 
-  }
+  }, [files, activeFileId]);
 
-};
-  const addFile = (
-    name,
-    language,
-    content = "",
-    path = name
-  ) => {
-    const newFile = {
-      id: crypto.randomUUID(),
-      name,
-      language,
-      icon: getIcon(language),
-      content,
-      path,
+  /* ==========================================
+      GET CONTENT
+  ========================================== */
+
+  const getContent = useCallback(() => {
+
+    return {
+
+      html:
+        files.find(f => f.language === "html")
+          ?.content || "",
+
+      css:
+        files.find(f => f.language === "css")
+          ?.content || "",
+
+      javascript:
+        files.find(
+          f => f.language === "javascript"
+        )?.content || "",
+
     };
 
-    setFiles((prev) => [...prev, newFile]);
+  }, [files]);
+    /* ==========================================
+      UPDATE SINGLE FILE CONTENT
+  ========================================== */
 
-    return newFile;
-  };
+  const updateContent = useCallback((fileId, content) => {
 
-  const addMultipleFiles = (newFiles) => {
-    const formatted = newFiles.map((file) => ({
-      id: crypto.randomUUID(),
-      name: file.name,
-      language: file.language,
-      icon: getIcon(file.language),
-     content:
-  typeof file.content === "string"
-    ? file.content
-    : JSON.stringify(file.content, null, 2),
-      path: file.path || file.name,
-    }));
-
-    setFiles((prev) => [...prev, ...formatted]);
-  };
-
-  const deleteFile = (id) => {
-    setFiles((prev) =>
-      prev.filter((file) => file.id !== id)
-    );
-  };
-
-  const renameFile = (id, name) => {
     setFiles((prev) =>
       prev.map((file) =>
-        file.id === id
-          ? {
-              ...file,
-              name,
-            }
-          : file
-      )
-    );
-  };
-
-  const updateContent = (id, content) => {
-    setFiles((prev) =>
-      prev.map((file) =>
-        file.id === id
+        file.id === fileId
           ? {
               ...file,
               content,
@@ -156,153 +102,266 @@ const closeTab = (id) => {
           : file
       )
     );
-  };
-    const getFile = (id) => {
-    return files.find((file) => file.id === id);
-  };
 
-  const getFileByPath = (path) => {
-    return files.find((file) => file.path === path);
-  };
+  }, []);
 
-  const getAllFiles = () => {
-    return files;
-  };
+  /* ==========================================
+      REPLACE HTML/CSS/JS CONTENT
+      (AI Edit)
+  ========================================== */
 
-  const updateFile = (id, updates) => {
+  const replaceContent = useCallback((changes) => {
+
+    if (!changes) return;
+
+    setFiles((prev) =>
+      prev.map((file) => {
+
+        if (
+          file.language === "html" &&
+          changes.html !== undefined
+        ) {
+          return {
+            ...file,
+            content: changes.html,
+          };
+        }
+
+        if (
+          file.language === "css" &&
+          changes.css !== undefined
+        ) {
+          return {
+            ...file,
+            content: changes.css,
+          };
+        }
+
+        if (
+          file.language === "javascript" &&
+          changes.javascript !== undefined
+        ) {
+          return {
+            ...file,
+            content: changes.javascript,
+          };
+        }
+
+        return file;
+
+      })
+    );
+
+  }, []);
+
+  /* ==========================================
+      REPLACE COMPLETE PROJECT
+      (AI Generate)
+  ========================================== */
+
+  const replaceFiles = useCallback((newFiles) => {
+
+    if (!Array.isArray(newFiles)) return;
+
+    setFiles(newFiles);
+
+    if (newFiles.length > 0) {
+      setActiveFileId(newFiles[0].id);
+    }
+
+  }, []);
+
+  /* ==========================================
+      CREATE NEW FILE
+  ========================================== */
+
+  const addFile = useCallback((name, language = "text") => {
+
+    const file = {
+      id: crypto.randomUUID(),
+      name,
+      path: name,
+      language,
+      content: "",
+    };
+
+    setFiles((prev) => [...prev, file]);
+
+    setActiveFileId(file.id);
+
+  }, []);
+    /* ==========================================
+      OPEN FILE
+  ========================================== */
+
+  const openFile = useCallback((fileId) => {
+
+    setActiveFileId(fileId);
+
+  }, []);
+
+  /* ==========================================
+      DELETE FILE
+  ========================================== */
+
+  const deleteFile = useCallback((fileId) => {
+
+    setFiles((prev) => {
+
+      const updated = prev.filter(
+        (file) => file.id !== fileId
+      );
+
+      if (activeFileId === fileId) {
+
+        if (updated.length) {
+          setActiveFileId(updated[0].id);
+        } else {
+          setActiveFileId(null);
+        }
+
+      }
+
+      return updated;
+
+    });
+
+  }, [activeFileId]);
+
+  /* ==========================================
+      RENAME FILE
+  ========================================== */
+
+  const renameFile = useCallback((fileId, newName) => {
+
+    if (!newName?.trim()) return;
+
     setFiles((prev) =>
       prev.map((file) =>
-        file.id === id
+        file.id === fileId
           ? {
               ...file,
-              ...updates,
+              name: newName.trim(),
+              path: newName.trim(),
             }
           : file
       )
     );
-  };
 
-  const duplicateFile = (id) => {
-    const file = getFile(id);
+  }, []);
 
-    if (!file) return;
+  /* ==========================================
+      DUPLICATE FILE
+  ========================================== */
 
-    const ext = file.name.includes(".")
-      ? file.name.split(".").pop()
-      : "";
+  const duplicateFile = useCallback((fileId) => {
 
-    const base = ext
-      ? file.name.replace(`.${ext}`, "")
-      : file.name;
+    setFiles((prev) => {
 
-    const copy = {
-      ...file,
-      id: crypto.randomUUID(),
-      name: `${base} Copy${ext ? `.${ext}` : ""}`,
-    };
+      const file = prev.find(
+        (item) => item.id === fileId
+      );
 
-    setFiles((prev) => [...prev, copy]);
-  };
+      if (!file) return prev;
 
-  const moveFile = (id, newPath) => {
-    updateFile(id, {
-      path: newPath,
+      const copy = {
+        ...file,
+        id: crypto.randomUUID(),
+        name: `${file.name} Copy`,
+        path: `${file.name} Copy`,
+      };
+
+      return [...prev, copy];
+
     });
-  };
 
-  const replaceContent = ({ html, css, javascript }) => {
-    updateContent("html", html);
-    updateContent("css", css);
-    updateContent("javascript", javascript);
-  };
+  }, []);
+    /* ==========================================
+      CONTEXT VALUE
+  ========================================== */
 
-  const getContent = () => {
-    return {
-      html:
-        files.find((f) => f.id === "html")?.content || "",
+  const value = useMemo(() => ({
+  // State
+  files,
+  activeFile,
+  activeFileId,
 
-      css:
-        files.find((f) => f.id === "css")?.content || "",
+  // Setters
+  setFiles,
+  setActiveFileId,
 
-      javascript:
-        files.find((f) => f.id === "javascript")?.content || "",
-    };
-  };
+  // Editor API
+  getContent,
+  updateContent,
+  replaceContent,
+  replaceFiles,
 
-const replaceFiles = (newFiles) => {
-  if (!Array.isArray(newFiles) || !newFiles.length) return;
+  // Explorer API
+  addFile,
+  openFile,
+  deleteFile,
+  renameFile,
+  duplicateFile,
 
-  const formatted = newFiles.map((file) => {
-    const path = file.path || file.name;
+  // Compatibility aliases
+  updateFileContent: updateContent,
+  createFile: addFile,
+  removeFile: deleteFile,
 
-    const name =
-      file.name ||
-      path.split("/").pop();
+}), [
+  files,
+  activeFile,
+  activeFileId,
+  getContent,
+  updateContent,
+  replaceContent,
+  replaceFiles,
+  addFile,
+  openFile,
+  deleteFile,
+  renameFile,
+  duplicateFile,
+]);
+/* ==========================================
+    HELPERS
+========================================== */
 
-    const language =
-      file.language ||
-      name.split(".").pop();
+const findFile = useCallback(
+  (id) => files.find((file) => file.id === id),
+  [files]
+);
 
-    return {
-      id: crypto.randomUUID(),
-      name,
-      path,
-      language,
-      icon: getIcon(language),
-     content:
-  typeof file.content === "string"
-    ? file.content
-    : JSON.stringify(file.content, null, 2),
-    };
-  });
+const clearFiles = useCallback(() => {
+  setFiles([]);
+  setActiveFileId(null);
+}, []);
 
-  setFiles(formatted);
+const fileCount = useMemo(
+  () => files.filter((f) => !f.path.endsWith("/")).length,
+  [files]
+);
 
-  setActiveFileId(formatted[0].id);
-
-  setOpenTabs([formatted[0].id]);
-};
+const sortedFiles = useMemo(() => {
+  return [...files].sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+}, [files]);
 
   return (
-    <FileContext.Provider
-      value={{
-        activeFile,
-        activeFileId,
-        setActiveFileId,
-
-        files,
-        setFiles,
-
-        addFile,
-        addMultipleFiles,
-        replaceFiles,
-
-        deleteFile,
-        renameFile,
-
-        updateContent,
-        updateFile,
-
-        replaceContent,
-
-        getContent,
-        getFile,
-        getFileByPath,
-        getAllFiles,
-
-        duplicateFile,
-        moveFile,
-        openTabs,
-setOpenTabs,
-
-openFile,
-
-closeTab,
-      }}
-    >
+    <FileContext.Provider value={value}>
       {children}
     </FileContext.Provider>
   );
-};
+}
 
-export const useFiles = () => useContext(FileContext);
+export function useFiles() {
+  const context = useContext(FileContext);
+
+  if (!context) {
+    throw new Error(
+      "useFiles must be used inside FileProvider"
+    );
+  }
+
+  return context;
+}

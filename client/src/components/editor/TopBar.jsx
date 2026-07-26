@@ -1,3 +1,5 @@
+import { useFiles } from "../../context/FileContext";
+import { exportProject } from "../../utils/exportProject";
 import {
   Save,
   Download,
@@ -25,6 +27,15 @@ export default function TopBar({
   saveStatus,
   projectTitle,
 }){
+  const { files } = useFiles();
+
+const handleExport = () => {
+  exportProject(files, projectTitle || "CodeNexus-Project");
+
+  if (onExport) {
+    onExport();
+  }
+};
   return (
     <div
       style={{
@@ -186,12 +197,9 @@ fontWeight:600
   Deploy
 </button>
 
-<button
-  onClick={onExport}
-  style={buttonStyle("#9333ea")}
->
-  <Download size={17} />
-  Export
+<button onClick={handleExport}>
+    <Download size={16} />
+    Export ZIP
 </button>
 <button
   onClick={onSettings}
