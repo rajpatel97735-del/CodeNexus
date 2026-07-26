@@ -4,12 +4,19 @@ export default function useAutoSave(handleSave, setSaveStatus) {
   const saveTimeout = useRef(null);
 
   const autoSave = () => {
-    setSaveStatus("💾 Saving...");
-
+    // Reset previous timer
     clearTimeout(saveTimeout.current);
 
-    saveTimeout.current = setTimeout(() => {
-      handleSave();
+    // Show Saving...
+    setSaveStatus("🟡 Saving...");
+
+    saveTimeout.current = setTimeout(async () => {
+      try {
+        await handleSave();
+      } catch (err) {
+        console.error(err);
+        setSaveStatus("🔴 Save Failed");
+      }
     }, 2000);
   };
 

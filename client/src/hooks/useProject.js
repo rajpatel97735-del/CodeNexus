@@ -1,4 +1,5 @@
 import { getProject, updateProject } from "../services/project.service";
+import toast from "react-hot-toast";
 
 export default function useProject({
   id,
@@ -6,6 +7,9 @@ export default function useProject({
   replaceContent,
   setChatHistory,
   setSaveStatus,
+  setHasUnsavedChanges,
+    setProjectTitle,
+    projectTitle,
 }) {
   const loadProject = async () => {
     try {
@@ -18,6 +22,7 @@ export default function useProject({
         css: project.css || "",
         javascript: project.javascript || "",
       });
+      setProjectTitle(project.title);
 
       setChatHistory(project.chatHistory || []);
     } catch (err) {
@@ -28,40 +33,49 @@ export default function useProject({
   const saveChatHistory = async (chatHistory) => {
     try {
       const { html, css, javascript } = getContent();
-
-      await updateProject(id, {
-        html,
-        css,
-        javascript,
-        chatHistory,
-      });
+await updateProject(id, {
+  title: projectTitle,
+  html,
+  css,
+  javascript,
+  chatHistory,
+});
     } catch (err) {
       console.error(err);
     }
   };
 
-  const handleSave = async () => {
-    try {
-      const { html, css, javascript } = getContent();
+const handleSave = async (titleArg) => {
+  const title =
+    typeof titleArg === "string"
+      ? titleArg
+      : projectTitle;
 
-      await updateProject(id, {
-        html,
-        css,
-        javascript,
-      });
+  try {
+    const { html, css, javascript } = getContent();
 
-     setSaveStatus(
-  `✅ Saved • ${new Date().toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  })}`
-);
-    } catch (err) {
-      console.error(err);
+    await updateProject(id, {
+      title,
+      html,
+      css,
+      javascript,
+    });
 
-      setSaveStatus("❌ Error");
-    }
-  };
+    setSaveStatus(
+      `✅ Saved • ${new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`
+    );
+
+    setHasUnsavedChanges(false);
+    toast.success("Project Saved Successfully");
+  } catch (err) {
+    console.error(err);
+    setSaveStatus("❌ Error");
+    toast.error("Failed to Save Project");
+  }
+};
 
   return {
     loadProject,

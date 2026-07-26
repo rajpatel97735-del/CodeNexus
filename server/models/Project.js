@@ -51,6 +51,20 @@ chatHistory: [
     },
   },
 ],
+isStarred: {
+  type: Boolean,
+  default: false,
+},
+
+thumbnail: {
+  type: String,
+  default: "",
+},
+
+lastOpened: {
+  type: Date,
+  default: Date.now,
+},
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

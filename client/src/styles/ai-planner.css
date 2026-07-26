@@ -1,106 +1,523 @@
-.planner-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(6px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
+/* ==========================================
+   CodeNexus AI Planner
+   Part 1 : Overlay + Card
+========================================== */
+
+/* ---------- Overlay ---------- */
+
+.planner-overlay{
+
+    position:fixed;
+
+    inset:0;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    padding:24px;
+
+    background:rgba(15,23,42,.78);
+
+    backdrop-filter:blur(10px);
+
+    -webkit-backdrop-filter:blur(10px);
+
+    z-index:9999;
+
+    animation:fadeOverlay .35s ease;
 }
 
-.planner-card {
-  width: 650px;
-  max-width: 90%;
-  background: #0f172a;
-  border: 1px solid #334155;
-  border-radius: 16px;
-  padding: 28px;
-  color: #fff;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+/* ---------- Planner Card ---------- */
+
+.planner-card{
+
+    position:relative;
+
+    overflow:hidden;
+
+    width:680px;
+
+    max-width:100%;
+
+    padding:32px;
+
+    border-radius:24px;
+
+    background:
+        linear-gradient(
+            180deg,
+            #111827,
+            #1e293b
+        );
+
+    border:1px solid #334155;
+
+    color:#ffffff;
+
+    box-shadow:
+        0 25px 60px rgba(0,0,0,.45);
+
+    animation:plannerPop .35s ease;
 }
 
-.planner-card h2 {
-  margin: 0;
-  font-size: 26px;
+/* ---------- Shine Effect ---------- */
+
+.planner-card::after{
+
+    content:"";
+
+    position:absolute;
+
+    top:0;
+
+    left:-120%;
+
+    width:120%;
+
+    height:100%;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(255,255,255,.05),
+            transparent
+        );
+
+    transition:.8s;
 }
 
-.planner-title {
-  margin-top: 10px;
-  color: #94a3b8;
-  font-size: 16px;
+.planner-card:hover::after{
+
+    left:120%;
+}
+/* ==========================================
+   Part 2 : Header + Roadmap
+========================================== */
+
+/* ---------- Heading ---------- */
+
+.planner-card h2{
+
+    font-size:30px;
+
+    font-weight:800;
+
+    color:#ffffff;
+
+    margin-bottom:10px;
+
+    letter-spacing:.3px;
 }
 
-.planner-steps {
-  margin-top: 25px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+/* ---------- Subtitle ---------- */
+
+.planner-title{
+
+    color:#94a3b8;
+
+    font-size:15px;
+
+    line-height:1.7;
+
+    margin-bottom:26px;
+
+    max-width:560px;
 }
 
-.planner-step {
-  background: #1e293b;
-  padding: 12px 16px;
-  border-radius: 10px;
-  border-left: 4px solid #3b82f6;
-  font-size: 15px;
+/* ---------- Steps ---------- */
+
+.planner-steps{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:14px;
 }
 
-.planner-info {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 25px;
-  gap: 20px;
+/* ---------- Step Card ---------- */
+
+.planner-step{
+
+    position:relative;
+
+    overflow:hidden;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:14px;
+
+    padding:16px 18px;
+
+    background:#111827;
+
+    border:1px solid #334155;
+
+    border-left:4px solid #3b82f6;
+
+    border-radius:14px;
+
+    transition:.3s;
 }
 
-.planner-info div {
-  flex: 1;
-  background: #111827;
-  border: 1px solid #334155;
-  padding: 16px;
-  border-radius: 10px;
-  text-align: center;
+.planner-step:hover{
+
+    transform:translateX(6px);
+
+    border-color:#3b82f6;
+
+    box-shadow:
+        0 15px 35px rgba(59,130,246,.15);
 }
 
-.planner-info strong {
-  display: block;
-  margin-top: 8px;
-  font-size: 18px;
-  color: #38bdf8;
+/* ---------- Step Number ---------- */
+
+.planner-step::before{
+
+    content:"✓";
+
+    width:28px;
+
+    height:28px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    border-radius:50%;
+
+    background:
+        linear-gradient(
+            135deg,
+            #2563eb,
+            #7c3aed
+        );
+
+    color:#ffffff;
+
+    font-size:14px;
+
+    font-weight:700;
+
+    flex-shrink:0;
+}
+/* ==========================================
+   Part 3 : Info Cards + Buttons
+========================================== */
+
+/* ---------- Info Grid ---------- */
+
+.planner-info{
+
+    display:grid;
+
+    grid-template-columns:repeat(2,1fr);
+
+    gap:18px;
+
+    margin-top:28px;
 }
 
-.planner-buttons {
-  display: flex;
-  gap: 15px;
-  margin-top: 30px;
+/* ---------- Info Card ---------- */
+
+.planner-info div{
+
+    position:relative;
+
+    overflow:hidden;
+
+    padding:20px;
+
+    text-align:center;
+
+    border-radius:16px;
+
+    background:
+        linear-gradient(
+            180deg,
+            #111827,
+            #1e293b
+        );
+
+    border:1px solid #334155;
+
+    transition:.3s;
 }
 
-.planner-generate,
-.planner-cancel {
-  flex: 1;
-  border: none;
-  padding: 14px;
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.2s;
+.planner-info div:hover{
+
+    transform:translateY(-5px);
+
+    border-color:#3b82f6;
+
+    box-shadow:
+        0 18px 40px rgba(59,130,246,.18);
 }
 
-.planner-generate {
-  background: #2563eb;
-  color: white;
+/* ---------- Label ---------- */
+
+.planner-info span{
+
+    display:block;
+
+    color:#94a3b8;
+
+    font-size:13px;
+
+    margin-bottom:10px;
 }
 
-.planner-generate:hover {
-  background: #1d4ed8;
+/* ---------- Value ---------- */
+
+.planner-info strong{
+
+    display:block;
+
+    font-size:24px;
+
+    font-weight:700;
+
+    color:#38bdf8;
 }
 
-.planner-cancel {
-  background: #334155;
-  color: white;
+/* ==========================================
+   Action Buttons
+========================================== */
+
+.planner-buttons{
+
+    display:flex;
+
+    gap:16px;
+
+    margin-top:32px;
 }
 
-.planner-cancel:hover {
-  background: #475569;
+/* ---------- Generate ---------- */
+
+.planner-generate{
+
+    flex:1;
+
+    border:none;
+
+    border-radius:14px;
+
+    padding:15px;
+
+    cursor:pointer;
+
+    font-size:15px;
+
+    font-weight:700;
+
+    color:#ffffff;
+
+    background:
+        linear-gradient(
+            135deg,
+            #2563eb,
+            #7c3aed
+        );
+
+    transition:.3s;
+}
+
+.planner-generate:hover{
+
+    transform:translateY(-3px);
+
+    box-shadow:
+        0 15px 35px rgba(99,102,241,.35);
+}
+
+.planner-generate:active{
+
+    transform:scale(.97);
+}
+
+/* ---------- Cancel ---------- */
+
+.planner-cancel{
+
+    flex:1;
+
+    border:1px solid #334155;
+
+    border-radius:14px;
+
+    padding:15px;
+
+    cursor:pointer;
+
+    font-size:15px;
+
+    font-weight:600;
+
+    color:#ffffff;
+
+    background:#1e293b;
+
+    transition:.3s;
+}
+
+.planner-cancel:hover{
+
+    background:#273449;
+
+    border-color:#475569;
+
+    transform:translateY(-2px);
+}
+
+.planner-cancel:active{
+
+    transform:scale(.98);
+}
+/* ==========================================
+   Part 4 : Animations + Responsive
+========================================== */
+
+/* ---------- Overlay Animation ---------- */
+
+@keyframes fadeOverlay{
+
+    from{
+        opacity:0;
+    }
+
+    to{
+        opacity:1;
+    }
+
+}
+
+/* ---------- Planner Card Animation ---------- */
+
+@keyframes plannerPop{
+
+    from{
+
+        opacity:0;
+
+        transform:
+            translateY(20px)
+            scale(.96);
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:
+            translateY(0)
+            scale(1);
+    }
+
+}
+
+/* ---------- Shine ---------- */
+
+@keyframes plannerShine{
+
+    from{
+
+        left:-120%;
+    }
+
+    to{
+
+        left:120%;
+    }
+
+}
+
+/* ==========================================
+   Responsive
+========================================== */
+
+/* ---------- Tablet ---------- */
+
+@media (max-width:768px){
+
+    .planner-overlay{
+
+        padding:18px;
+    }
+
+    .planner-card{
+
+        padding:24px;
+    }
+
+    .planner-card h2{
+
+        font-size:26px;
+    }
+
+    .planner-info{
+
+        grid-template-columns:1fr;
+    }
+
+    .planner-buttons{
+
+        flex-direction:column;
+    }
+
+    .planner-generate,
+    .planner-cancel{
+
+        width:100%;
+    }
+
+}
+
+/* ---------- Mobile ---------- */
+
+@media (max-width:480px){
+
+    .planner-card{
+
+        padding:20px;
+
+        border-radius:18px;
+    }
+
+    .planner-card h2{
+
+        font-size:22px;
+    }
+
+    .planner-title{
+
+        font-size:14px;
+    }
+
+    .planner-step{
+
+        padding:14px;
+    }
+
+    .planner-step::before{
+
+        width:24px;
+        height:24px;
+
+        font-size:12px;
+    }
+
+    .planner-info strong{
+
+        font-size:22px;
+    }
+
 }

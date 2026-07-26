@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 function AIPrompt({
   prompt,
   setPrompt,
@@ -5,7 +6,25 @@ function AIPrompt({
   quickPrompts,
   onSubmit,
 }) {
-  return (
+
+  const fileInputRef = useRef(null);
+  const [selectedImage, setSelectedImage] = useState(null);
+const [selectedFile, setSelectedFile] = useState(null);
+const handleAIRequest = () => {
+  if (selectedFile) {
+    onSubmit({
+      prompt,
+      image: selectedFile,
+      mode: "vision",
+    });
+  } else {
+    onSubmit({
+      prompt,
+      mode: "chat",
+    });
+  }
+};  
+return (
     <>
       {/* Quick Prompts */}
       <div
@@ -18,9 +37,13 @@ function AIPrompt({
       >
         {quickPrompts.map((item) => (
           <button
-            key={item}
-          onClick={() => {
+         key={item.title}
+      onClick={() => {
   setPrompt(item);
+
+  setTimeout(() => {
+   handleAIRequest();
+  }, 100);
 }}
             style={{
               border: "1px solid #334155",
@@ -36,6 +59,93 @@ function AIPrompt({
           </button>
         ))}
       </div>
+      {/* Upload Screenshot */}
+
+<div
+  style={{
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: "18px",
+    marginBottom: "12px",
+  }}
+>
+  <button
+    onClick={() => fileInputRef.current?.click()}
+    style={{
+      background: "#334155",
+      color: "white",
+      border: "none",
+      borderRadius: "10px",
+      padding: "10px 16px",
+      cursor: "pointer",
+      fontWeight: "600",
+    }}
+  >
+    📷 Upload Screenshot
+  </button>
+
+  <input
+    ref={fileInputRef}
+    type="file"
+    accept="image/*"
+    style={{ display: "none" }}
+  onChange={(e) => {
+  const file = e.target.files?.[0];
+
+  if (!file) return;
+
+  setSelectedFile(file);
+  setSelectedImage(URL.createObjectURL(file));
+}}
+  />
+  {selectedImage && (
+  <div
+    style={{
+      marginBottom: 15,
+      border: "1px solid #334155",
+      borderRadius: 12,
+      overflow: "hidden",
+      background: "#0f172a",
+      padding: 10,
+    }}
+  >
+    <img
+      src={selectedImage}
+      alt="Preview"
+      style={{
+        width: "100%",
+        borderRadius: 8,
+        maxHeight: 220,
+        objectFit: "contain",
+      }}
+    />
+
+    <button
+      onClick={() => {
+  setSelectedImage(null);
+  setSelectedFile(null);
+
+  if (fileInputRef.current) {
+    fileInputRef.current.value = "";
+  }
+}}
+      style={{
+        marginTop: 10,
+        width: "100%",
+        background: "#ef4444",
+        color: "white",
+        border: "none",
+        padding: 10,
+        borderRadius: 8,
+        cursor: "pointer",
+      }}
+    >
+      ❌ Remove Image
+    </button>
+  </div>
+)}
+</div>
 
       {/* Prompt Input */}
       <textarea
@@ -44,21 +154,25 @@ function AIPrompt({
        onKeyDown={(e) => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
-    onSubmit();
+ handleAIRequest();
   }
 }}
 onInput={(e) => {
   e.target.style.height = "auto";
   e.target.style.height = `${e.target.scrollHeight}px`;
 }}
-        placeholder={`Ask CodeNexus AI anything...
+     placeholder={
+  selectedImage
+    ? "Describe what changes you want in this design...\n\nExample:\n• Convert to React\n• Make it responsive\n• Generate Tailwind CSS"
+    : `Ask CodeNexus AI anything...
 
 Examples:
 • Create Portfolio Website
 • Add Hero Section
 • Fix Navbar
 • Optimize CSS
-• Explain my code`}
+• Explain my code`
+}
         style={{
           
           marginTop: "20px",
@@ -77,6 +191,7 @@ overflowY: "auto",
           lineHeight: "1.6",
         }}
       />
+      
 
       {/* Footer */}
       <div
@@ -108,7 +223,7 @@ overflowY: "auto",
 
       {/* Send Button */}
       <button
-        onClick={onSubmit}
+        onClick={handleAIRequest}
       
         disabled={loading || !prompt.trim()}
         style={{
@@ -129,7 +244,11 @@ cursor:
     : "pointer",
         }}
       >
-       {loading ? "🤖 CodeNexus AI Thinking..." : "✨ Generate"}
+      {loading
+  ? "🤖 CodeNexus AI Thinking..."
+  : selectedImage
+  ? "🖼️ Generate Website From Image"
+  : "✨ Generate"}
       </button>
     </>
   );

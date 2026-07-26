@@ -1,0 +1,296 @@
+/* ==========================================
+   CodeNexus File Tabs
+   Part 1 : Layout
+========================================== */
+
+.tabs{
+
+    display:flex;
+
+    align-items:center;
+
+    overflow-x:auto;
+
+    overflow-y:hidden;
+
+    white-space:nowrap;
+
+    background:#111827;
+
+    border-bottom:1px solid #334155;
+
+    height:48px;
+
+    scrollbar-width:thin;
+
+    scrollbar-color:#475569 transparent;
+}
+
+.tabs::-webkit-scrollbar{
+
+    height:6px;
+}
+
+.tabs::-webkit-scrollbar-track{
+
+    background:transparent;
+}
+
+.tabs::-webkit-scrollbar-thumb{
+
+    background:#475569;
+
+    border-radius:999px;
+}
+
+/* ---------- Tab ---------- */
+
+.tab{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    min-width:160px;
+
+    max-width:220px;
+
+    height:100%;
+
+    padding:0 16px;
+
+    cursor:pointer;
+
+    user-select:none;
+
+    color:#94a3b8;
+
+    border-right:1px solid #1e293b;
+
+    transition:all .25s ease;
+
+    flex-shrink:0;
+
+    position:relative;
+}
+
+.tab:hover{
+
+    background:#1e293b;
+
+    color:#ffffff;
+}
+
+/* ---------- Active ---------- */
+
+.active{
+
+    background:#0f172a;
+
+    color:#ffffff;
+}
+
+.active::after{
+
+    content:"";
+
+    position:absolute;
+
+    left:0;
+
+    right:0;
+
+    bottom:0;
+
+    height:3px;
+
+    background:#3b82f6;
+}
+/* ==========================================
+   Part 2 : Icon + Name + Close
+========================================== */
+
+/* ---------- Icon ---------- */
+
+.icon{
+
+    width:18px;
+
+    height:18px;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    flex-shrink:0;
+}
+
+/* ---------- File Name ---------- */
+
+.name{
+
+    flex:1;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    white-space:nowrap;
+
+    font-size:13px;
+
+    font-weight:500;
+}
+
+/* ---------- Close Button ---------- */
+
+.close{
+
+    width:22px;
+
+    height:22px;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    border-radius:6px;
+
+    opacity:0;
+
+    transition:all .2s ease;
+
+    flex-shrink:0;
+}
+
+.tab:hover .close{
+
+    opacity:1;
+}
+
+.close:hover{
+
+    background:#334155;
+
+    color:#ffffff;
+}
+
+/* ---------- Active Close ---------- */
+
+.active .close{
+
+    opacity:1;
+}
+
+/* ---------- Unsaved Dot (Future Use) ---------- */
+
+.unsaved{
+
+    width:8px;
+
+    height:8px;
+
+    border-radius:50%;
+
+    background:#3b82f6;
+
+    margin-left:6px;
+
+    flex-shrink:0;
+}
+/* ==========================================
+   Part 3 : Animation + Responsive
+========================================== */
+
+/* ---------- Smooth Active Animation ---------- */
+
+.tab{
+
+    transform:translateY(0);
+
+    transition:
+        background .25s ease,
+        color .25s ease,
+        transform .2s ease;
+}
+
+.tab:hover{
+
+    transform:translateY(-1px);
+}
+
+/* ---------- Active Glow ---------- */
+
+.active{
+
+    box-shadow:
+        inset 0 1px 0 rgba(59,130,246,.25);
+}
+
+/* ---------- Active Underline Animation ---------- */
+
+.active::after{
+
+    animation:tabSlide .25s ease;
+}
+
+@keyframes tabSlide{
+
+    from{
+
+        transform:scaleX(0);
+    }
+
+    to{
+
+        transform:scaleX(1);
+    }
+
+}
+
+/* ---------- Focus ---------- */
+
+.tab:focus-visible{
+
+    outline:2px solid #3b82f6;
+
+    outline-offset:-2px;
+}
+
+/* ---------- Mobile ---------- */
+
+@media (max-width:768px){
+
+    .tab{
+
+        min-width:130px;
+
+        padding:0 12px;
+    }
+
+    .name{
+
+        font-size:12px;
+    }
+
+    .close{
+
+        opacity:1;
+    }
+
+}
+
+@media (max-width:480px){
+
+    .tab{
+
+        min-width:110px;
+    }
+
+}

@@ -1,85 +1,108 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import styles from "./CommandPalette.module.css";
 
 export default function CommandPalette({
   open,
   onClose,
-  commands,
+  commands = [],
 }) {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    if (!open) setSearch("");
-  }, [open]);
+    if (!open) {
+      setSearch("");
+      return;
+    }
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () =>
+      window.removeEventListener(
+        "keydown",
+        handleKeyDown
+      );
+  }, [open, onClose]);
+
+  const filteredCommands = useMemo(() => {
+    if (!search.trim()) return commands;
+
+    return commands.filter((command) =>
+      command.label
+        .toLowerCase()
+        .includes(search.toLowerCase())
+    );
+  }, [commands, search]);
 
   if (!open) return null;
 
-  const filtered = commands.filter((cmd) =>
-    cmd.label.toLowerCase().includes(search.toLowerCase())
-  );
-
   return (
     <div
+      className={styles.overlay}
       onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,.55)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "flex-start",
-        paddingTop: 80,
-        zIndex: 9999,
-      }}
     >
       <div
+        className={styles.modal}
         onClick={(e) => e.stopPropagation()}
-        style={{
-          width: 650,
-          background: "#111827",
-          borderRadius: 12,
-          overflow: "hidden",
-          border: "1px solid #334155",
-        }}
       >
         <input
-          autoFocus
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Type a command..."
-          style={{
-            width: "100%",
-            padding: 16,
-            background: "#1e293b",
-            color: "white",
-            border: "none",
-            outline: "none",
-            fontSize: 16,
-          }}
-        />
+  autoFocus
+  placeholder="Search files or commands..."
+  value={search}
+  onChange={(e) => setSearch(e.target.value)}
+  onKeyDown={(e) => {
+    if (e.key === "Enter" && filteredCommands.length > 0) {
+      filteredCommands[0].action?.();
+      onClose();
+    }
+  }}
+  className={styles.input}
+/>
 
-        <div
-          style={{
-            maxHeight: 350,
-            overflow: "auto",
-          }}
-        >
-          {filtered.map((cmd) => (
-            <div
-              key={cmd.label}
-              onClick={() => {
-                cmd.action();
-                onClose();
-              }}
-              style={{
-                padding: 14,
-                cursor: "pointer",
-                borderBottom:
-                  "1px solid #1f2937",
-              }}
-            >
-              ⚡ {cmd.label}
+        <div className={styles.list}>
+          {filteredCommands.length === 0 ? (
+            <div className={styles.empty}>
+              🔍 No files or commands found
             </div>
-          ))}
+          ) : (
+            filteredCommands.map((command) => (
+            <button
+  key={command.label}
+  className={styles.item}
+  onClick={() => {
+    command.action?.();
+    onClose();
+  }}
+>
+  <span style={{ fontSize: 22 }}>
+    {command.icon}
+  </span>
+
+  <div
+    style={{
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "flex-start",
+    }}
+  >
+    <strong>{command.label}</strong>
+
+    <small
+      style={{
+        color: "#94a3b8",
+      }}
+    >
+      Quick Action
+    </small>
+  </div>
+</button>
+            ))
+          )}
         </div>
       </div>
     </div>

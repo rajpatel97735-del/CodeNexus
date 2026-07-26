@@ -1,4 +1,5 @@
 import Groq from "groq-sdk";
+import { jsonrepair } from "jsonrepair";
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -28,8 +29,25 @@ function extractSection(text, section) {
 
   return text.substring(contentStart, end).trim();
 }
+function detectFramework(prompt) {
+  const text = prompt.toLowerCase();
 
+  if (text.includes("react")) return "react";
+  if (text.includes("vite")) return "react";
+  if (text.includes("next")) return "next";
+  if (text.includes("tailwind")) return "tailwind";
+
+  return "html";
+}
 export async function generateWebsiteFromAI(prompt) {
+  const framework = detectFramework(prompt);
+   console.log("========== DETECTION ==========");
+  console.log("Prompt:", prompt);
+  console.log("Framework:", framework);
+  console.log("===============================");
+  if (framework === "react") {
+        return generateReactWebsiteFromAI(prompt);
+    }
   const completion = await groq.chat.completions.create({
     model: "llama-3.3-70b-versatile",
     temperature: 0.4,
@@ -177,12 +195,98 @@ Ensure:
   };
 }
 export async function editWebsiteFromAI({
-  prompt,
-  html,
-  css,
-  javascript,
+    prompt,
+    framework,
+    files,
+    html,
+    css,
+    javascript,
 })
- {
+ {// ================= React Project Edit =================
+
+if (framework === "react-vite") {
+
+  const completion = await groq.chat.completions.create({
+    model: "llama-3.3-70b-versatile",
+    temperature: 0.3,
+    messages: [
+      {
+        role: "system",
+        content: `
+You are a Senior React + Vite Engineer.
+
+The user already has a React project.
+
+Modify the project according to the request.
+
+Return ONLY valid JSON.
+
+Format:
+
+{
+  "framework":"react-vite",
+  "files":[
+    {
+      "path":"src/App.jsx",
+      "language":"jsx",
+      "content":"..."
+    }
+  ]
+}
+
+Rules:
+
+- Return COMPLETE updated files.
+- Keep existing file paths.
+- Create new files if required.
+- Delete files only if necessary.
+- No markdown.
+- No explanation.
+- No triple backticks.
+`
+      },
+      {
+        role: "user",
+        content: JSON.stringify({
+          prompt,
+          files
+        })
+      }
+    ]
+  });
+
+  let text = completion.choices[0].message.content.trim();
+
+  text = text
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+
+let project;
+
+try {
+  project = JSON.parse(text);
+} catch {
+  project = JSON.parse(jsonrepair(text));
+}
+const pkg = project.files?.find(
+  (f) => f.path === "package.json"
+);
+
+if (pkg) {
+  try {
+    JSON.parse(pkg.content);
+  } catch {
+    pkg.content = JSON.stringify(
+      JSON.parse(jsonrepair(pkg.content)),
+      null,
+      2
+    );
+  }
+}
+return project;
+
+}
   const completion = await groq.chat.completions.create({
     model: "llama-3.3-70b-versatile",
     temperature: 0.3,
@@ -494,4 +598,178 @@ ${javascript}
   });
 
   return completion.choices[0].message.content.trim();
+}
+export async function generateComponentFromAI(prompt) {
+  console.log("1. Before Groq API");
+  const completion = await groq.chat.completions.create({
+    model: "llama-3.3-70b-versatile",
+    temperature: 0.4,
+    messages: [
+      {
+        role: "system",
+        content: `
+You are an expert frontend developer.
+
+Generate ONLY the requested component.
+
+Return ONLY this format.
+
+###HTML###
+(component html)
+
+###CSS###
+(component css)
+
+###JAVASCRIPT###
+(component javascript)
+
+Rules:
+- No markdown
+- No explanation
+- No JSON
+- No <!DOCTYPE>
+- No <html>
+- No <body>
+`,
+      },
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+  });
+  console.log("2. After Groq API");
+
+  let text = completion.choices[0].message.content;
+console.log("3. AI Response:");
+console.log(text)
+  text = text
+    .replace(/```html/gi, "")
+    .replace(/```css/gi, "")
+    .replace(/```javascript/gi, "")
+    .replace(/```js/gi, "")
+    .replace(/```/g, "");
+
+  return {
+    html: extractSection(text, "HTML"),
+    css: extractSection(text, "CSS"),
+    javascript: extractSection(text, "JAVASCRIPT"),
+  };
+}
+async function generateReactWebsiteFromAI(prompt) {
+
+  const completion = await groq.chat.completions.create({
+
+    model: "llama-3.3-70b-versatile",
+
+    temperature: 0.3,
+
+    messages: [
+
+      {
+        role: "system",
+
+        
+content: `
+You are a Senior React, Vite and Frontend Architect.
+
+Generate a COMPLETE production-ready React Vite project.
+
+Return ONLY valid JSON.
+
+The JSON format MUST be:
+
+{
+  "framework": "react-vite",
+  "files": [
+    {
+      "path": "package.json",
+      "language": "json",
+      "content": "..."
+    }
+  ]
+}
+
+IMPORTANT RULES
+
+1. Return ONLY JSON.
+2. No markdown.
+3. No explanation.
+4. No triple backticks.
+5. Every file must contain COMPLETE code.
+6. Never return partial code.
+7. Never omit required files.
+
+The project MUST contain these files:
+
+- package.json
+- vite.config.js
+- index.html
+- src/main.jsx
+- src/App.jsx
+- src/index.css
+
+If additional files are required, include them.
+
+package.json MUST include:
+
+- name
+- private
+- version
+- type: module
+- scripts
+    - dev
+    - build
+    - preview
+- dependencies
+- devDependencies
+
+Use:
+
+React
+Vite
+JavaScript
+
+Do NOT use TypeScript unless the user explicitly requests it.
+
+Do NOT use CDN links.
+
+All imports must work correctly.
+
+The project must run successfully after:
+
+npm install
+npm run dev
+
+Generate clean, production-quality code.
+`
+      },
+
+      {
+        role: "user",
+        content: prompt
+      }
+
+    ]
+
+  });
+
+  let text = completion.choices[0].message.content.trim();
+console.log("========== RAW REACT RESPONSE ==========");
+console.log(text);
+console.log("========================================");
+  text = text.replace(/```json/gi, "")
+             .replace(/```/g, "")
+             .trim();
+
+ let project;
+
+try {
+    project = JSON.parse(text);
+} catch {
+    project = JSON.parse(jsonrepair(text));
+}
+
+return project;
+
 }

@@ -13,6 +13,17 @@ export const createProject = async (req, res) => {
   css,
   javascript,
 } = req.body;
+const existingProject = await Project.findOne({
+  title,
+  user: req.user.id,
+});
+
+if (existingProject) {
+  return res.status(400).json({
+    success: false,
+    message: "Project with this name already exists.",
+  });
+}
 const project = await Project.create({
   title,
   description,
@@ -42,9 +53,8 @@ const project = await Project.create({
 export const getProjects = async (req, res) => {
   try {
     const projects = await Project.find({ user: req.user.id }).sort({
-      createdAt: -1,
-    });
-
+  lastOpened: -1,
+});
     res.status(200).json({
       success: true,
       projects,
@@ -62,7 +72,10 @@ export const getProjects = async (req, res) => {
 // =======================
 export const getProject = async (req, res) => {
   try {
-    const project = await Project.findById(req.params.id);
+const project = await Project.findOne({
+  _id: req.params.id,
+  user: req.user.id,
+});
 
     if (!project) {
       return res.status(404).json({
@@ -81,7 +94,10 @@ export const getProject = async (req, res) => {
       message: error.message,
     });
   }
+  project.lastOpened = new Date();
+await project.save();
 };
+
 
 // =======================
 // Update Project
@@ -89,14 +105,21 @@ export const getProject = async (req, res) => {
 export const updateProject = async (req, res) => {
   try {
     const {
-      title,
-      description,
-      language,
-      html,
-      css,
-      javascript,
-      chatHistory,
-    } = req.body;
+  title,
+  description,
+  language,
+  html,
+  css,
+  javascript,
+  chatHistory,
+} = req.body;
+
+if (!title?.trim()) {
+  return res.status(400).json({
+    success: false,
+    message: "Project title is required.",
+  });
+}
 
     const updateData = {
       title,
@@ -112,14 +135,17 @@ export const updateProject = async (req, res) => {
       updateData.chatHistory = chatHistory;
     }
 
-    const project = await Project.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
+    const project = await Project.findOneAndUpdate(
+  {
+    _id: req.params.id,
+    user: req.user.id,
+  },
+  updateData,
+  {
+    new: true,
+    runValidators: true,
+  }
+);
 
     if (!project) {
       return res.status(404).json({

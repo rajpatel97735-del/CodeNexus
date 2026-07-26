@@ -1,4 +1,6 @@
 import { useState } from "react";
+import ReactPreview from "../../preview/ReactPreview";
+import HtmlPreview from "../../preview/HtmlPreview";
 import {
   Monitor,
   Tablet,
@@ -8,7 +10,10 @@ import {
   Maximize2,
 } from "lucide-react";
 
-export default function PreviewPanel({ srcDoc }) {
+export default function PreviewPanel({
+    srcDoc,
+    files
+}){
   const [device, setDevice] = useState("desktop");
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -35,7 +40,18 @@ export default function PreviewPanel({ srcDoc }) {
     win.document.write(srcDoc);
     win.document.close();
   };
-
+const isReactProject =
+  files?.some((file) =>
+    file.path.toLowerCase().includes("app.jsx")
+  );
+    console.log("isReactProject =", isReactProject);
+console.table(
+  files.map((f) => ({
+    path: f.path,
+    name: f.name,
+    language: f.language,
+  }))
+);
   const fullscreenPreview = () => {
     const iframe = document.getElementById("preview-frame");
 
@@ -46,6 +62,7 @@ export default function PreviewPanel({ srcDoc }) {
     }
   };
 
+  
   return (
     <div
       style={{
@@ -198,21 +215,27 @@ export default function PreviewPanel({ srcDoc }) {
           padding: 24,
         }}
       >
-        <iframe
-          key={refreshKey}
-          id="preview-frame"
-          title="preview"
-          srcDoc={srcDoc}
-          style={{
-            width: getWidth(),
-            height: "100%",
-            border: "1px solid #cbd5e1",
-            background: "#fff",
-            borderRadius: 12,
-            transition: "all .3s ease",
-            boxShadow: "0 18px 40px rgba(0,0,0,.25)",
-          }}
+        
+         {
+    isReactProject ? (
+
+        <ReactPreview
+            files={files}
+            width={getWidth()}
+            refreshKey={refreshKey}
         />
+
+    ) : (
+
+        <HtmlPreview
+            srcDoc={srcDoc}
+            width={getWidth()}
+            refreshKey={refreshKey}
+        />
+
+    )
+}
+        
       </div>
     </div>
   );

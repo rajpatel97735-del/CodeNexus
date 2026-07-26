@@ -1,0 +1,21 @@
+export default function TypingIndicator() {
+  return (
+    <div className="typing-wrapper">
+
+      <div className="typing-avatar">
+        🤖
+      </div>
+
+      <div className="typing-bubble">
+
+        <span></span>
+
+        <span></span>
+
+        <span></span>
+
+      </div>
+
+    </div>
+  );
+}

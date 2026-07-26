@@ -5,7 +5,7 @@ export default function useDeploy({
   getContent,
   addConsoleLog,
 }) {
-  const handleDeploy = async () => {
+const handleDeploy = async () => {
     try {
       addConsoleLog("🚀 Deploying Project...", "info");
 
@@ -21,7 +21,7 @@ export default function useDeploy({
 
       addConsoleLog(`🌍 ${res.url}`, "success");
 
-      window.open(res.url, "_blank");
+    return res.url;
 
     } catch (err) {
       console.error(err);

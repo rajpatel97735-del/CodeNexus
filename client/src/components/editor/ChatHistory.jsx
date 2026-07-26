@@ -134,6 +134,36 @@ export default function ChatHistory({
                   }}
                 >
                   {chat.time}
+                  {chat.sender === "ai" && (
+  <div
+    style={{
+      display: "flex",
+      gap: 8,
+      marginTop: 10,
+    }}
+  >
+    <button
+      style={actionButton}
+      onClick={() => {
+        navigator.clipboard.writeText(chat.message);
+      }}
+    >
+      📋 Copy
+    </button>
+
+    <button style={actionButton}>
+      🔄 Retry
+    </button>
+
+    <button style={actionButton}>
+      👍
+    </button>
+
+    <button style={actionButton}>
+      👎
+    </button>
+  </div>
+)}
                 </div>
               </div>
             </div>
@@ -156,4 +186,13 @@ export default function ChatHistory({
       </div>
     </div>
   );
+  const actionButton = {
+  border: "none",
+  background: "#1e293b",
+  color: "#cbd5e1",
+  padding: "6px 10px",
+  borderRadius: 6,
+  cursor: "pointer",
+  fontSize: 12,
+};
 }

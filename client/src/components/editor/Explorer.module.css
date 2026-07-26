@@ -257,3 +257,18 @@ button {
     height: 36px;
   }
 }
+.folderRow{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:6px 8px;
+    cursor:pointer;
+    color:#e2e8f0;
+    border-radius:8px;
+    transition:.2s;
+    font-weight:600;
+}
+
+.folderRow:hover{
+    background:#1e293b;
+}

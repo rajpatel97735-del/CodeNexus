@@ -1,21 +1,65 @@
 const intentRules = [
+  // ================= COMPONENT =================
   {
-    action: "generate",
+    action: "component",
     keywords: [
-      "create",
-      "build",
-      "generate",
-      "make website",
-      "design",
-      "portfolio",
-      "landing page",
-      "dashboard",
-      "ecommerce",
-      "restaurant",
-      "website",
+      "section",
+      "component",
+      "navbar",
+      "hero",
+      "footer",
+      "pricing",
+      "testimonial",
+      "faq",
+      "contact form",
+      "login form",
+      "signup form",
+      "card",
+      "gallery",
+      "team",
+      "feature",
+      "services",
+      "about section",
+      "stats",
+      "timeline",
+      "accordion",
+      "modal",
+      "popup",
     ],
   },
 
+  // ================= GENERATE =================
+  {
+    action: "generate",
+keywords: [
+  "create",
+  "build",
+  "generate",
+  "make",
+  "develop",
+
+  "website",
+  "web app",
+  "application",
+  "app",
+
+  "react app",
+  "react project",
+  "react vite",
+  "vite project",
+
+  "todo app",
+  "portfolio",
+  "dashboard",
+  "landing page",
+  "clone",
+
+  "full website",
+  "full project"
+]
+  },
+
+  // ================= EDIT =================
   {
     action: "edit",
     keywords: [
@@ -26,13 +70,18 @@ const intentRules = [
       "update",
       "remove",
       "delete",
-      "make",
       "convert",
       "move",
       "resize",
+      "dark mode",
+      "light mode",
+      "change color",
+      "increase",
+      "decrease",
     ],
   },
 
+  // ================= FIX =================
   {
     action: "fix",
     keywords: [
@@ -47,6 +96,7 @@ const intentRules = [
     ],
   },
 
+  // ================= OPTIMIZE =================
   {
     action: "optimize",
     keywords: [
@@ -60,6 +110,7 @@ const intentRules = [
     ],
   },
 
+  // ================= EXPLAIN =================
   {
     action: "explain",
     keywords: [

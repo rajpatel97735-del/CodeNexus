@@ -28,7 +28,12 @@ import { useFiles } from "../context/FileContext";
 import useEditorSettings from "../hooks/useEditorSettings";
 import useAIStatus from "../hooks/useAIStatus";
 import useCodeReview from "../hooks/useCodeReview";
-
+import CommandPalette from "../components/editor/CommandPalette";
+import StatusBar from "../components/editor/StatusBar";
+import ShortcutModal from "../components/editor/ShortcutModal";
+import SettingsModal from "../components/editor/SettingsModal";
+import RenameProjectModal from "../components/editor/RenameProjectModal";
+import DeploySuccessModal from "../components/editor/DeploySuccessModal";
 
 
 function Editor() {
@@ -37,6 +42,9 @@ function Editor() {
   updateContent,
   getContent,
   replaceContent,
+   replaceFiles,
+  activeFileId,
+  setActiveFileId,
 } = useFiles();
 const {
   html,
@@ -44,6 +52,7 @@ const {
   javascript,
 } = getContent();
   const { id } = useParams();
+  console.log("Project ID:", id);
 
 const aiStatus = useAIStatus();
 const { issues, analyze } = useCodeReview();
@@ -58,7 +67,18 @@ const {
 });
 
 const [pendingChanges, setPendingChanges] = useState(null);
+const applyPendingChanges = () => {
+  if (!pendingChanges) return;
+
+  replaceContent(pendingChanges);
+  setPendingChanges(null);
+};
+
+const rejectPendingChanges = () => {
+  setPendingChanges(null);
+};
 const [chatHistory, setChatHistory] = useState([]);
+const [startupPrompt, setStartupPrompt] = useState("");
 const {
   versionHistory,
   historyIndex,
@@ -74,24 +94,47 @@ const {
 const [activePanel, setActivePanel] =
     useState("explorer");
   const [plan, setPlan] = useState(null);
+  const [renameOpen, setRenameOpen] = useState(false);
+   const [projectTitle, setProjectTitle] = useState("");
   const [saveStatus, setSaveStatus] = useState("Saved");
+const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+const [shortcutOpen, setShortcutOpen] =
+useState(false);
+const [commandOpen, setCommandOpen] = useState(false);
+const [settingsOpen, setSettingsOpen] =
+useState(false);
+const [deployUrl, setDeployUrl] = useState("");
+const [deployOpen, setDeployOpen] = useState(false);
+const [cursorPosition, setCursorPosition] = useState({
+  line: 1,
+  column: 1,
+});
 
 const {
   loadProject,
   saveChatHistory,
   handleSave,
-} = useProject({
+} =useProject({
   id,
   getContent,
   replaceContent,
   setChatHistory,
   setSaveStatus,
+  setHasUnsavedChanges,
+  setProjectTitle,
+  projectTitle,
 });
+
 const {
   srcDoc,
   previewErrors,
 } = usePreview(files);
-const [aiTyping, setAiTyping] = useState(false);
+const [aiState, setAiState] = useState({
+  loading: false,
+  progress: 0,
+  step: "",
+  logs: [],
+});
 const loadingSteps = [
   "🧠 Understanding Prompt...",
   "🎨 Planning UI...",
@@ -116,36 +159,119 @@ const {
 } = useEditorSettings();
 // ================= Resize Panel =================
 
+const commands = [
+  {
+    icon: "📄",
+    label: "New File",
+    action: () => setActivePanel("explorer"),
+  },
+  {
+    icon: "🤖",
+    label: "Open AI Assistant",
+    action: () => setActivePanel("ai"),
+  },
+  {
+    icon: "📜",
+    label: "History",
+    action: () => setActivePanel("history"),
+  },
+  {
+    icon: "💬",
+    label: "Chat History",
+    action: () => setActivePanel("chat"),
+  },
+  {
+    icon: "📦",
+    label: "Templates",
+    action: () => setActivePanel("templates"),
+  },
+  {
+    icon: "🚀",
+    label: "Deploy",
+    action: handleDeploy,
+  },
+  {
+    icon: "🧹",
+    label: "Clear Console",
+    action: clearConsole,
+  },
+  {
+    icon: "🎨",
+    label: "Toggle Theme",
+    action: () =>
+      setEditorTheme((t) =>
+        t === "vs-dark" ? "light" : "vs-dark"
+      ),
+  },
+];
+const quickItems = [
+  {
+    icon: "📄",
+    label: "index.html",
+    action: () =>
+      setActiveFileId(files.find(f => f.language === "html")?.id),
+  },
+  {
+    icon: "🎨",
+    label: "style.css",
+    action: () =>
+      setActiveFileId(files.find(f => f.language === "css")?.id),
+  },
+  {
+    icon: "⚡",
+    label: "script.js",
+    action: () =>
+      setActiveFileId(files.find(f => f.language === "javascript")?.id),
+  },
+
+  ...commands,
+];
 const containerRef = useRef(null);
 
 const [editorWidth, setEditorWidth] = useState(45);
 
 const [isResizing, setIsResizing] = useState(false);
-useEffect(() => {
-  addConsoleLog("🚀 CodeNexus Editor Started", "info");
-}, []);
 
 useEffect(() => {
-  if (id) {
-    loadProject();
-  }
-}, [id]);
+  const handleBeforeUnload = (e) => {
+    if (!hasUnsavedChanges) return;
 
+    e.preventDefault();
+    e.returnValue = "";
+  };
+
+  window.addEventListener("beforeunload", handleBeforeUnload);
+
+  return () => {
+    window.removeEventListener("beforeunload", handleBeforeUnload);
+  };
+}, [hasUnsavedChanges]);
 useEffect(() => {
-  if (!aiTyping) {
+  if (!aiState.loading) {
     setLoadingIndex(0);
-    return;
   }
+}, [aiState.loading]);
+useEffect(() => {
+  const handleKeyDown = (e) => {
 
-  const timer = setInterval(() => {
-    setLoadingIndex((prev) =>
-      prev >= loadingSteps.length - 1 ? prev : prev + 1
-    );
-  }, 800);
+    if (e.ctrlKey && e.key === "s") {
+      e.preventDefault();
+      handleSave();
+    }
 
-  return () => clearInterval(timer);
-}, [aiTyping]);
+    if (e.ctrlKey && e.key === "r") {
+      e.preventDefault();
+      handleRun();
+    }
 
+  };
+
+  window.addEventListener("keydown", handleKeyDown);
+
+  return () =>
+    window.removeEventListener("keydown", handleKeyDown);
+
+}, []);
 useEffect(() => {
   const handleMouseMove = (e) => {
     if (!isResizing || !containerRef.current) return;
@@ -220,11 +346,10 @@ const handleGenerateProject = () => {
 const handleCancelPlanner = () => {
   setPlan(null);
 };
-const [activeFile, setActiveFile] = useState("html");
-const currentFile = files.find(
-  (file) => file.id === activeFile
-);
 
+const currentFile = files.find(
+  (file) => file.id === activeFileId
+);
 const { autoSave } = useAutoSave(
   handleSave,
   setSaveStatus
@@ -240,17 +365,24 @@ const { autoSave } = useAutoSave(
 } = useEditorAI({
   getContent,
   replaceContent,
+  replaceFiles,
+  files,
   addConsoleLog,
+  
   addMessage,
   saveVersion,
   saveChatHistory,
   setChatHistory,
   aiStatus,
-  setAiTyping,
+  setAiState,
 
   // NEW
   setPendingChanges,
 });
+console.log("FILES =>", files);
+const handleAnalyze = () => {
+  aiExplain();
+};
 
 
 
@@ -313,21 +445,26 @@ Generated on: ${new Date().toLocaleString()}
      toast.error("Failed to export project");
     }
   };
-  const applyChanges = () => {
+const applyChanges = () => {
   if (!pendingChanges) return;
 
-  replaceContent(pendingChanges);
+  const changes = pendingChanges;
 
-  saveVersion(
-    pendingChanges.html,
-    pendingChanges.css,
-    pendingChanges.javascript
-  );
-
+  // Pehle DiffEditor ko unmount karo
   setPendingChanges(null);
 
-  addConsoleLog("AI changes applied", "success");
+  // Fir next tick me Monaco update karo
+  setTimeout(() => {
+    replaceContent(changes);
 
+    saveVersion(
+      changes.html,
+      changes.css,
+      changes.javascript
+    );
+
+    addConsoleLog("AI changes applied", "success");
+  }, 0);
 };
 const rejectChanges = () => {
   setPendingChanges(null);
@@ -343,101 +480,162 @@ const rejectChanges = () => {
   style={{
     display: "flex",
     flexDirection: "column",
-    height: "100vh",
+   minHeight: "100vh",
+overflowY: "auto",
     background: "#0f172a",
   }}
 >
-  {aiTyping && (
+ 
+{aiState.loading && (
   <div
     style={{
       position: "fixed",
       inset: 0,
-      background: "rgba(15,23,42,.82)",
-      backdropFilter: "blur(6px)",
-      zIndex: 9999,
+      background: "rgba(15,23,42,.75)",
+      backdropFilter: "blur(4px)",
       display: "flex",
-      justifyContent: "center",
       alignItems: "center",
+      justifyContent: "center",
+      zIndex: 9999,
     }}
   >
     <div
       style={{
-        width: 500,
+        width: 420,
         background: "#111827",
-        border: "1px solid #334155",
         borderRadius: 18,
-        padding: 35,
-        color: "#fff",
+        padding: 30,
+        border: "1px solid #334155",
         textAlign: "center",
       }}
     >
-      <div
-        style={{
-          fontSize: 55,
-          marginBottom: 20,
-        }}
-      >
-        🤖
-      </div>
-
-      <h2
-        style={{
-          color: "#22c55e",
-          marginBottom: 20,
-        }}
-      >
-        CodeNexus AI
+      <h2 style={{ color: "#fff" }}>
+        🤖 AI Working...
       </h2>
 
       <p
         style={{
-          fontSize: 18,
-          marginBottom: 25,
+          color: "#94a3b8",
+          marginTop: 10,
         }}
       >
-        {loadingSteps[loadingIndex]}
+        {aiState.step}
       </p>
 
       <div
         style={{
-          height: 8,
+          width: "100%",
+          height: 10,
           background: "#1e293b",
-          borderRadius: 20,
+          borderRadius: 999,
+          marginTop: 20,
           overflow: "hidden",
         }}
       >
         <div
           style={{
-            width: `${((loadingIndex + 1) / loadingSteps.length) * 100}%`,
+            width: `${aiState.progress}%`,
             height: "100%",
-            background: "#22c55e",
-            transition: "0.4s",
+            background: "#2563eb",
+            transition: ".3s",
           }}
         />
       </div>
 
       <p
         style={{
-          marginTop: 18,
-          color: "#94a3b8",
+          color: "#38bdf8",
+          marginTop: 10,
+          fontWeight: 700,
         }}
       >
-        Please wait while AI builds your website...
+        {aiState.progress}%
       </p>
     </div>
   </div>
 )}
-  
+   {pendingChanges && (
+  <div
+    style={{
+      position: "fixed",
+      bottom: 20,
+      right: 20,
+      background: "#1e293b",
+      border: "1px solid #334155",
+      borderRadius: "12px",
+      padding: "16px",
+      zIndex: 9999,
+      boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+    }}
+  >
+    <p
+      style={{
+        color: "white",
+        marginBottom: "12px",
+      }}
+    >
+      🤖 AI has generated changes. Review them.
+    </p>
+
+    <div style={{ display: "flex", gap: "10px" }}>
+      <button
+        onClick={applyPendingChanges}
+        style={{
+          background: "#22c55e",
+          color: "white",
+          border: "none",
+          padding: "8px 16px",
+          borderRadius: "8px",
+          cursor: "pointer",
+        }}
+      >
+        ✅ Accept
+      </button>
+
+      <button
+        onClick={rejectPendingChanges}
+        style={{
+          background: "#ef4444",
+          color: "white",
+          border: "none",
+          padding: "8px 16px",
+          borderRadius: "8px",
+          cursor: "pointer",
+        }}
+      >
+        ❌ Reject
+      </button>
+    </div>
+  </div>
+)}
 <TopBar
   onSave={handleSave}
   onExport={handleDownload}
-  onDeploy={handleDeploy}
+ onDeploy={async () => {
+  const url = await handleDeploy();
+
+  if (!url) return;
+
+  setDeployUrl(url);
+  setDeployOpen(true);
+}}
   onRun={() => {}}
   onUndo={handleUndo}
   onRedo={handleRedo}
+  onAnalyze={handleAnalyze}
+  onOptimize={aiOptimize}
   onFix={aiFix}
   saveStatus={saveStatus}
+   projectTitle={projectTitle}
+
+  onSettings={() => setSettingsOpen(true)}
+  onRename={() => setRenameOpen(true)}
 />
+<div className="editor-ai-badge">
+
+🟢 AI Connected
+
+</div>
 
 
       {/* ================= Sidebar ================= */}
@@ -445,6 +643,7 @@ const rejectChanges = () => {
   style={{
     display: "flex",
     flex: 1,
+    minHeight: 0,
     overflow: "hidden",
   }}
 >
@@ -454,20 +653,17 @@ const rejectChanges = () => {
   />
 
   {activePanel === "explorer" && (
-    <Explorer
-      activeFile={activeFile}
-      setActiveFile={setActiveFile}
-    />
+   <Explorer />
   )}
-
-  <div
-    style={{
-      flex: 1,
-      padding: "20px",
-      overflow: "hidden",
-    }}
-  >
-        {/* Header */}
+<div
+  style={{
+    flex: 1,
+    padding: "20px",
+    overflowY: "auto",
+    overflowX: "hidden",
+    minHeight: 0,
+  }}
+>    {/* Header */}
 
         <div
           style={{
@@ -502,10 +698,14 @@ const rejectChanges = () => {
 <AIPanel
     onAgent={aiAgent}
     history={chatHistory}
-    aiTyping={aiTyping}
+ aiTyping={aiState.loading}
+ startupPrompt={startupPrompt}
 />
 <ChangesPreview
   pendingChanges={pendingChanges}
+  currentHtml={html}
+  currentCss={css}
+  currentJavascript={javascript}
   onApply={applyChanges}
   onReject={rejectChanges}
 />
@@ -522,7 +722,7 @@ const rejectChanges = () => {
     display: "flex",
     gap: 0,
     marginTop: "20px",
-    height: "75vh",
+   height:"70vh",
   }}
 >
   {/* ================= Left : Monaco ================= */}
@@ -534,16 +734,17 @@ const rejectChanges = () => {
       border: "1px solid #334155",
       borderRadius: "10px",
       overflow: "hidden",
+
+
+    background: "#111827",
+    boxShadow: "0 20px 45px rgba(0,0,0,.35)",
     }}
   >
-    <FileTabs
-      activeFile={activeFile}
-      setActiveFile={setActiveFile}
-    />
-
+ <FileTabs />
     <MonacoEditor
       height="100%"
-      language={activeFile}
+      
+   language={currentFile?.language || "html"}
       theme={editorTheme}
       value={currentFile?.content || ""}
       options={{
@@ -561,9 +762,28 @@ const rejectChanges = () => {
           top: 12,
         },
       }}
-      onChange={(value) => {
-        updateContent(activeFile, value || "");
-      }}
+   onChange={(value) => {
+  updateContent(activeFileId, value || "");
+
+  setHasUnsavedChanges(true);
+
+  autoSave();
+}}
+onMount={(editor) => {
+
+  editor.onDidChangeCursorPosition((e) => {
+
+    setCursorPosition({
+
+      line: e.position.lineNumber,
+
+      column: e.position.column,
+
+    });
+
+  });
+
+}}
     />
   </div>
 
@@ -572,13 +792,15 @@ const rejectChanges = () => {
   <div
     onMouseDown={() => setIsResizing(true)}
     style={{
-      width: "6px",
-      cursor: "col-resize",
-      background: "#334155",
-      margin: "0 8px",
-      borderRadius: "10px",
-      transition: "0.2s",
-    }}
+  width: "8px",
+  cursor: "col-resize",
+  background:
+    "linear-gradient(180deg,#2563eb,#7c3aed)",
+  margin: "0 6px",
+  borderRadius: "999px",
+  opacity: .6,
+  transition: ".25s",
+}}
   />
 
   {/* ================= Right : Preview ================= */}
@@ -589,9 +811,17 @@ const rejectChanges = () => {
       minWidth: 300,
       display: "flex",
       flexDirection: "column",
+       background:"#111827",
+    border:"1px solid #334155",
+    borderRadius:"10px",
+    boxShadow:"0 20px 45px rgba(0,0,0,.35)",
+
     }}
   >
-    <PreviewPanel srcDoc={srcDoc} />
+ <PreviewPanel
+    srcDoc={srcDoc}
+    files={files}
+/>
   </div>
 </div>
 
@@ -615,7 +845,7 @@ const rejectChanges = () => {
 {activePanel === "chat" && (
   <ChatHistory
     history={chatHistory}
-    aiTyping={aiTyping}
+aiTyping={aiState.loading}
   />
 )}
 
@@ -632,11 +862,65 @@ const rejectChanges = () => {
     }
   />
 )}
+<CommandPalette
+  open={commandOpen}
+  onClose={() => setCommandOpen(false)}
+  commands={quickItems}
+/>
+<StatusBar
+   currentFile={currentFile}
+   saveStatus={saveStatus}
+   aiLoading={aiState.loading}
+   cursorPosition={cursorPosition}
+/>
+<ShortcutModal
+  open={shortcutOpen}
+  onClose={() => setShortcutOpen(false)}
+/>
+<SettingsModal
+  open={settingsOpen}
+  onClose={() => setSettingsOpen(false)}
+
+  editorTheme={editorTheme}
+  setEditorTheme={setEditorTheme}
+
+  fontSize={fontSize}
+  setFontSize={setFontSize}
+
+  wordWrap={wordWrap}
+  setWordWrap={setWordWrap}
+
+  minimap={minimap}
+  setMinimap={setMinimap}
+
+  previewMode={previewMode}
+  setPreviewMode={setPreviewMode}
+/>
+<DeploySuccessModal
+  open={deployOpen}
+  url={deployUrl}
+  onClose={() => setDeployOpen(false)}
+/>
+<RenameProjectModal
+  open={renameOpen}
+  currentTitle={projectTitle}
+  onClose={() => setRenameOpen(false)}
+  onSave={async (newTitle) => {
+    if (!newTitle.trim()) return;
+
+    setProjectTitle(newTitle);
+
+    await handleSave(newTitle);
+
+    setRenameOpen(false);
+  }}
+/>
 
         </div>
         </div>
     </div>
-  );
+
+);
 }
 
 export default Editor;
