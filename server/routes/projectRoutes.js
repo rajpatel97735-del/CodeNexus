@@ -12,6 +12,10 @@ import protect from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
+// ======================================
+// Project Routes
+// ======================================
+
 // Create Project
 router.post("/", protect, createProject);
 

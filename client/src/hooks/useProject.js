@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { getProject, updateProject } from "../services/project.service";
 import toast from "react-hot-toast";
 
@@ -8,74 +9,115 @@ export default function useProject({
   setChatHistory,
   setSaveStatus,
   setHasUnsavedChanges,
-    setProjectTitle,
-    projectTitle,
+  setProjectTitle,
+  projectTitle,
 }) {
-  const loadProject = async () => {
-    try {
-      const res = await getProject(id);
+  // ======================================
+  // Load Project
+  // ======================================
 
-      const project = res.data.project;
+  const loadProject = useCallback(async () => {
+    if (!id) return;
+
+    try {
+      const { data } = await getProject(id);
+
+      if (!data?.project) return;
+
+      const project = data.project;
 
       replaceContent({
-        html: project.html || "",
-        css: project.css || "",
-        javascript: project.javascript || "",
+        html: project.html ?? "",
+        css: project.css ?? "",
+        javascript: project.javascript ?? "",
       });
-      setProjectTitle(project.title);
 
-      setChatHistory(project.chatHistory || []);
-    } catch (err) {
-      console.error(err);
+      setProjectTitle(project.title ?? "Untitled Project");
+      setChatHistory(project.chatHistory ?? []);
+    } catch (error) {
+      console.error("Load Project Error:", error);
+      toast.error("Failed to load project");
     }
-  };
+  }, [id, replaceContent, setProjectTitle, setChatHistory]);
 
-  const saveChatHistory = async (chatHistory) => {
-    try {
-      const { html, css, javascript } = getContent();
-await updateProject(id, {
-  title: projectTitle,
-  html,
-  css,
-  javascript,
-  chatHistory,
-});
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  // ======================================
+  // Save Chat History
+  // ======================================
 
-const handleSave = async (titleArg) => {
-  const title =
-    typeof titleArg === "string"
-      ? titleArg
-      : projectTitle;
+  const saveChatHistory = useCallback(
+    async (chatHistory) => {
+      if (!id) return;
 
-  try {
-    const { html, css, javascript } = getContent();
+      try {
+        const { html, css, javascript } = getContent();
 
-    await updateProject(id, {
-      title,
-      html,
-      css,
-      javascript,
-    });
+        await updateProject(id, {
+          title: projectTitle || "Untitled Project",
+          html,
+          css,
+          javascript,
+          chatHistory,
+        });
+      } catch (error) {
+        console.error("Save Chat Error:", error);
+      }
+    },
+    [id, getContent, projectTitle]
+  );
 
-    setSaveStatus(
-      `✅ Saved • ${new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      })}`
-    );
+  // ======================================
+  // Save Project
+  // ======================================
 
-    setHasUnsavedChanges(false);
-    toast.success("Project Saved Successfully");
-  } catch (err) {
-    console.error(err);
-    setSaveStatus("❌ Error");
-    toast.error("Failed to Save Project");
-  }
-};
+  const handleSave = useCallback(
+    async (titleArg) => {
+      if (!id) return;
+
+      const title =
+        typeof titleArg === "string"
+          ? titleArg
+          : projectTitle || "Untitled Project";
+
+      try {
+        const { html, css, javascript } = getContent();
+
+        await updateProject(id, {
+          title,
+          html,
+          css,
+          javascript,
+        });
+
+        setSaveStatus(
+          `✅ Saved • ${new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}`
+        );
+
+        setHasUnsavedChanges(false);
+
+        toast.success("Project Saved Successfully");
+      } catch (error) {
+        console.error("Save Project Error:", error);
+
+        setSaveStatus("❌ Error");
+
+        toast.error("Failed to Save Project");
+      }
+    },
+    [
+      id,
+      getContent,
+      projectTitle,
+      setHasUnsavedChanges,
+      setSaveStatus,
+    ]
+  );
+
+  // ======================================
+  // Exports
+  // ======================================
 
   return {
     loadProject,

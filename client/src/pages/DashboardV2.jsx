@@ -2,194 +2,257 @@ import Sidebar from "../components/dashboard/Sidebar";
 import Topbar from "../components/dashboard/Topbar";
 import { useNavigate } from "react-router-dom";
 import "./../styles/dashboard-v2.css";
+
 import StatCard from "../components/dashboard/StatCard";
-import useProjects from "../hooks/useProjects";
 import AIQuickActions from "../components/dashboard/AIQuickActions";
 import AnalyticsChart from "../components/dashboard/AnalyticsChart";
-import { deleteProject } from "../services/project.service";
+
+import useProjects from "../hooks/useProjects";
+
+import {
+  createProject,
+  deleteProject,
+} from "../services/project.service";
+
+import { toast } from "react-hot-toast";
+
 import {
   FolderOpen,
-  CalendarDays,
   ArrowRight,
   Trash2,
   Clock3,
   Code2,
   Bot,
 } from "lucide-react";
-import { createProject } from "../services/project.service";
-import { toast } from "react-hot-toast";
-
 
 function DashboardV2() {
   const user = JSON.parse(localStorage.getItem("user"));
-  const { projects } = useProjects();
+
+  const {
+    projects,
+    loading,
+    refreshProjects,
+  } = useProjects();
+
   const navigate = useNavigate();
-const handleDelete = async (id) => {
-  if (!window.confirm("Delete this project?")) return;
 
-  try {
-    await deleteProject(id);
-    window.location.reload();
-  } catch (err) {
-    alert("Failed to delete project.");
+  // ======================================
+  // Create New Project
+  // ======================================
+
+  const handleNewProject = async () => {
+    try {
+      const { data } = await createProject({
+        title: "Untitled Project",
+        description: "",
+        language: "html",
+        html: "",
+        css: "",
+        javascript: "",
+      });
+
+      toast.success("Project Created");
+
+      navigate(`/editor/${data.project._id}`);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to create project");
+    }
+  };
+
+  // ======================================
+  // Delete Project
+  // ======================================
+
+  const handleDelete = async (id) => {
+    const confirmed = window.confirm(
+      "Delete this project permanently?"
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await deleteProject(id);
+
+      toast.success("Project Deleted");
+
+      await refreshProjects();
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete project");
+    }
+  };
+
+  // ======================================
+  // AI Quick Actions
+  // ======================================
+
+  const handleQuickAction = (action) => {
+    switch (action) {
+      case "generate":
+        toast.success("Opening AI Website Generator...");
+        navigate("/ai-studio", {
+          state: { mode: "generate" },
+        });
+        break;
+
+      case "analyze":
+        toast.success("Opening Code Analyzer...");
+        navigate("/ai-studio", {
+          state: { mode: "analyze" },
+        });
+        break;
+
+      case "debug":
+        toast.success("Opening AI Debugger...");
+        navigate("/ai-studio", {
+          state: { mode: "debug" },
+        });
+        break;
+
+      case "chat":
+        toast.success("Opening AI Chat...");
+        navigate("/ai-studio", {
+          state: { mode: "chat" },
+        });
+        break;
+
+      default:
+        break;
+    }
+  };
+
+  // ======================================
+  // Loading
+  // ======================================
+
+  if (loading) {
+    return (
+      <div className="dashboard">
+        <Sidebar />
+
+        <div className="main">
+          <Topbar onNewProject={handleNewProject} />
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              height: "80vh",
+              fontSize: "20px",
+              color: "#94a3b8",
+            }}
+          >
+            Loading Projects...
+          </div>
+        </div>
+      </div>
+    );
   }
-};
-const handleNewProject = async () => {
-  try {
-    const res = await createProject({
-      title: "Untitled Project",
-      html: "",
-      css: "",
-      javascript: "",
-      language: "HTML",
-      description: "",
-    });
 
-    console.log("Response:", res);
-    console.log("Data:", res.data);
-    console.log("Project:", res.data.project);
-    console.log("Project ID:", res.data.project?._id);
-
-    navigate(`/editor/${res.data.project._id}`);
-  } catch (err) {
-    console.error(err);
-  }
-};
-const handleQuickAction = (action) => {
-
-  switch (action) {
-
-    case "generate":
-      toast.success("Opening AI Website Generator...");
-      navigate("/ai-studio", {
-        state: { mode: "generate" }
-      });
-      break;
-
-    case "analyze":
-      toast.success("Opening Code Analyzer...");
-      navigate("/ai-studio", {
-        state: { mode: "analyze" }
-      });
-      break;
-
-    case "debug":
-      toast.success("Opening AI Debugger...");
-      navigate("/ai-studio", {
-        state: { mode: "debug" }
-      });
-      break;
-
-    case "chat":
-      toast.success("Opening AI Chat...");
-      navigate("/ai-studio", {
-        state: { mode: "chat" }
-      });
-      break;
-
-    default:
-      break;
-  }
-
-};
   return (
     <div className="dashboard">
       <Sidebar />
 
       <div className="main">
-  <Topbar onNewProject={handleNewProject} />
+        <Topbar onNewProject={handleNewProject} />
 
-      <div className="hero-banner">
+        {/* ======================================
+            Hero Banner
+        ====================================== */}
 
-  <div>
+        <div className="hero-banner">
+          <div>
+            <span className="hero-badge">
+              🚀 CodeNexus AI Workspace
+            </span>
 
-    <span className="hero-badge">
-      🚀 CodeNexus AI Workspace
-    </span>
+            <h1>
+              Welcome Back,
+              <span className="gradient-name">
+                {" "}
+                {user?.name}
+              </span>
+            </h1>
 
-    <h1>
-      Welcome Back,
-      <span className="gradient-name">
-        {" "}{user?.name}
-      </span>
-    </h1>
+            <p>
+              Build modern websites with AI,
+              edit code instantly,
+              optimize performance,
+              and deploy in one click.
+            </p>
 
-    <p>
-      Build modern websites with AI, edit code instantly,
-      optimize performance and deploy in one click.
-    </p>
+            <div className="hero-buttons">
+              <button
+                className="hero-primary"
+                onClick={handleNewProject}
+              >
+                ✨ New Project
+              </button>
 
-    <div className="hero-buttons">
+              <button
+                className="hero-secondary"
+                onClick={() => navigate("/ai-studio")}
+              >
+                🤖 AI Studio
+              </button>
+            </div>
+          </div>
 
-      <button
-        className="hero-primary"
-        onClick={handleNewProject}
-      >
-        ✨ New Project
-      </button>
+          <div className="hero-right">
+            <div className="hero-chip">
+              🟢 AI Connected
+            </div>
 
-      <button
-        className="hero-secondary"
-        onClick={() => navigate("/ai-studio")}
-      >
-        🤖 AI Studio
-      </button>
+            <div className="hero-chip">
+              📂 {projects.length} Projects
+            </div>
 
-    </div>
+            <div className="hero-chip">
+              ⚡ Llama 3.3 70B
+            </div>
+          </div>
+        </div>
 
-  </div>
-
-  <div className="hero-right">
-
-      <div className="hero-chip">
-          🟢 AI Connected
-      </div>
-
-      <div className="hero-chip">
-          📂 {projects.length} Projects
-      </div>
-
-      <div className="hero-chip">
-          ⚡ Llama 3.3 70B
-      </div>
-
-  </div>
-
-</div>
-
-        {/* ===== Stats ===== */}
+        {/* ======================================
+            Stats
+        ====================================== */}
 
         <div className="stats-grid">
-         <StatCard
-  title="Projects"
-  value={projects.length}
-  color="#2563eb"
-  icon={<FolderOpen size={22} />}
-/>
+          <StatCard
+            title="Projects"
+            value={projects.length}
+            color="#2563eb"
+            icon={<FolderOpen size={22} />}
+          />
 
-<StatCard
-  title="AI Chats"
-  value="127"
-  color="#7c3aed"
-  icon={<Bot size={22} />}
-/>
+          <StatCard
+            title="AI Chats"
+            value="127"
+            color="#7c3aed"
+            icon={<Bot size={22} />}
+          />
 
-<StatCard
-  title="Lines of Code"
-  value="24.8K"
-  color="#16a34a"
-  icon={<Code2 size={22} />}
-/>
+          <StatCard
+            title="Lines of Code"
+            value="24.8K"
+            color="#16a34a"
+            icon={<Code2 size={22} />}
+          />
 
-<StatCard
-  title="Hours Saved"
-  value="83"
-  color="#ea580c"
-  icon={<Clock3 size={22} />}
-/>
+          <StatCard
+            title="Hours Saved"
+            value="83"
+            color="#ea580c"
+            icon={<Clock3 size={22} />}
+          />
         </div>
 
         {/* ===== Recent Projects ===== */}
+                {/* ======================================
+            Recent Projects
+        ====================================== */}
 
         <div
           style={{
@@ -209,158 +272,171 @@ const handleQuickAction = (action) => {
             </p>
           ) : (
             projects.slice(0, 5).map((project) => (
-            <div
-  key={project._id}
-  className="project-card"
->
-  <div className="project-info">
+              <div
+                key={project._id}
+                className="project-card"
+              >
+                <div className="project-info">
+                  <div className="project-icon">
+                    <FolderOpen size={22} />
+                  </div>
 
-    <div className="project-icon">
-      <FolderOpen size={22} />
-    </div>
+                  <div>
+                    <h3>{project.title}</h3>
 
-    <div>
+                    <p>
+                      {project.description ||
+                        "No description"}
+                    </p>
 
-      <h3>{project.title}</h3>
+                    <div className="project-meta">
+                      <span className="language-badge">
+                        <Code2 size={13} />
+                        {project.language}
+                      </span>
 
-      <p>
-        {project.description || "No description"}
-      </p>
+                      <span>
+                        <Clock3 size={13} />
+                        Updated{" "}
+                        {new Date(
+                          project.updatedAt
+                        ).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-   <div className="project-meta">
+                <div className="project-actions">
+                  <button
+                    className="open-project-btn"
+                    onClick={() =>
+                      navigate(`/editor/${project._id}`)
+                    }
+                  >
+                    ✏ Open
+                  </button>
 
-    <span className="language-badge">
+                  <button
+                    className="deploy-btn"
+                    onClick={() =>
+                      toast("Deploy feature coming soon 🚀")
+                    }
+                  >
+                    🚀 Deploy
+                  </button>
 
-        <Code2 size={13}/>
-
-        {project.language}
-
-    </span>
-
-    <span>
-
-        <Clock3 size={13}/>
-
-        Updated
-
-        {new Date(project.updatedAt).toLocaleDateString()}
-
-    </span>
-
-</div>
-
-    </div>
-
-  </div>
-
- <div className="project-actions">
-
-  <button
-    className="open-project-btn"
-    onClick={() => navigate(`/editor/${project._id}`)}
-  >
-    ✏ Open
-  </button>
-
-  <button
-    className="deploy-btn"
-  >
-    🚀 Deploy
-  </button>
-
-  <button
-    className="delete-btn"
-    onClick={() => handleDelete(project._id)}
-  >
-    🗑
-  </button>
-
-</div>
+                  <button
+                    className="delete-btn"
+                    onClick={() =>
+                      handleDelete(project._id)
+                    }
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
               </div>
             ))
           )}
         </div>
 
-        {/* ===== AI Studio ===== */}
+        {/* ======================================
+            Dashboard Bottom
+        ====================================== */}
 
-      <div className="dashboard-bottom">
+        <div className="dashboard-bottom">
 
-  {/* LEFT */}
+          {/* LEFT */}
 
-  <div className="dashboard-left">
+          <div className="dashboard-left">
 
-    <AIQuickActions onOpen={handleQuickAction} />
+            <AIQuickActions
+              onOpen={handleQuickAction}
+            />
 
-    <div className="recent-projects-card">
-      <h2>📂 Recent Projects</h2>
+            <div className="recent-projects-card">
 
-      {projects.length === 0 ? (
-        <p>No Projects Yet</p>
-      ) : (
-        projects.slice(0,5).map(project=>(
-          <div
-            key={project._id}
-            className="mini-project"
-            onClick={()=>navigate(`/editor/${project._id}`)}
-          >
-            <span>📄 {project.title}</span>
+              <h2>📂 Recent Projects</h2>
 
-            <ArrowRight size={16}/>
+              {projects.length === 0 ? (
+                <p>No Projects Yet</p>
+              ) : (
+                projects.slice(0, 5).map((project) => (
+                  <div
+                    key={project._id}
+                    className="mini-project"
+                    onClick={() =>
+                      navigate(
+                        `/editor/${project._id}`
+                      )
+                    }
+                  >
+                    <span>
+                      📄 {project.title}
+                    </span>
+
+                    <ArrowRight size={16} />
+                  </div>
+                ))
+              )}
+
+            </div>
+
           </div>
-        ))
-      )}
 
-    </div>
+          {/* RIGHT */}
 
-  </div>
+          <div className="dashboard-right">
 
-  {/* RIGHT */}
+            <AnalyticsChart />
 
-  <div className="dashboard-right">
+            <div className="dashboard-widget">
+              <h3>🟢 AI Status</h3>
 
-    <AnalyticsChart />
+              <p>Provider : Groq</p>
 
-    <div className="dashboard-widget">
+              <p>Model : Llama 3.3 70B</p>
 
-      <h3>🟢 AI Status</h3>
+              <p>
+                Status :
+                <span
+                  style={{
+                    color: "#22c55e",
+                  }}
+                >
+                  {" "}
+                  Connected
+                </span>
+              </p>
+            </div>
 
-      <p>Provider : Groq</p>
+            <div className="dashboard-widget">
+              <h3>📊 Workspace</h3>
 
-      <p>Model : Llama 3.3 70B</p>
+              <p>
+                Projects : {projects.length}
+              </p>
 
-      <p>Status :
-        <span style={{color:"#22c55e"}}>
-          Connected
-        </span>
-      </p>
+              <p>AI Chats : 127</p>
 
-    </div>
+              <p>Deployments : 8</p>
+            </div>
 
-    <div className="dashboard-widget">
+            <div className="dashboard-widget">
 
-      <h3>📊 Workspace</h3>
+              <h3>💡 AI Tip</h3>
 
-      <p>Projects : {projects.length}</p>
+              <p>
+                Use detailed prompts for better UI
+                generation and keep your projects
+                organized for faster development.
+              </p>
 
-      <p>AI Chats : 127</p>
+            </div>
 
-      <p>Deployments : 8</p>
+          </div>
 
-    </div>
+        </div>
 
-    <div className="dashboard-widget">
-
-      <h3>💡 AI Tip</h3>
-
-      <p>
-        Use detailed prompts for better UI generation.
-      </p>
-
-    </div>
-
-  </div>
-
-</div>
       </div>
     </div>
   );

@@ -8,7 +8,7 @@ import {
   Rocket,
   ArrowRight,
 } from "lucide-react";
-
+import { registerUser } from "../services/auth.service";
 import "./Register.css";
 
 function Register() {
@@ -22,34 +22,49 @@ function Register() {
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
-    name:"",
-    email:"",
-    password:"",
-    confirmPassword:""
+  name: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+});
+const handleChange = (e) => {
+  setFormData({
+    ...formData,
+    [e.target.name]: e.target.value,
   });
+};
 
-  const handleChange=(e)=>{
-    setFormData({
-      ...formData,
-      [e.target.name]:e.target.value
-    });
-  };
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-  const handleSubmit=async(e)=>{
+  if (formData.password !== formData.confirmPassword) {
+    alert("Passwords do not match.");
+    return;
+  }
 
-    e.preventDefault();
-
+  try {
     setLoading(true);
 
-    setTimeout(()=>{
+    const response = await registerUser({
+      name: formData.name,
+      email: formData.email,
+      password: formData.password,
+    });
 
-      setLoading(false);
+    localStorage.setItem("verifyEmail", formData.email);
 
-      navigate("/login");
+    alert(response.data.message);
 
-    },1500);
+    navigate("/verify-otp");
 
-  };
+  } catch (error) {
+    alert(
+      error.response?.data?.message || "Registration failed."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   return(
 

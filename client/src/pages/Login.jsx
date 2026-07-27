@@ -8,7 +8,7 @@ import {
   Rocket,
   ArrowRight,
 } from "lucide-react";
-
+import { useEffect } from "react";
 import "./Login.css";
 import { loginUser } from "../services/auth.service";
 import { useAuth } from "../context/AuthContext";
@@ -20,11 +20,19 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
+  
 
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+  useEffect(() => {
+  const token = localStorage.getItem("token");
+
+  if (token) {
+    navigate("/dashboard");
+  }
+}, [navigate]);
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -45,7 +53,10 @@ function Login() {
 
       navigate("/dashboard");
     } catch (err) {
-      console.log(err);
+     alert(
+  err.response?.data?.message ||
+  "Login failed. Please try again."
+);
     } finally {
       setLoading(false);
     }
