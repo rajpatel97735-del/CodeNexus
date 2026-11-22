@@ -49,7 +49,7 @@ function Login() {
 
       const res = await loginUser(formData);
 
-      login(res.data.user, res.data.token);
+      login(res.data.token, res.data.user);
 
       navigate("/dashboard");
     } catch (err) {

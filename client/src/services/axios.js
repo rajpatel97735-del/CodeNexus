@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: "https://codenexus-2.onrender.com/api",
+baseURL: "https://codenexus-56oh.onrender.com/api",
   timeout: 30000, // 30 seconds
   headers: {
     "Content-Type": "application/json",
